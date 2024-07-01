@@ -1,5 +1,16 @@
-#clip(epsilon) -plot for optimum + check limits:
+import numpy as np
+import matplotlib as plt
 
+from source.run import run
+
+conf = dict()
+conf['max_mu'] = 100
+conf['n_samples'] = 50000
+conf['n_dim'] = 2
+conf['max_cov'] = 100
+conf['n_components'] = 30
+
+#clip(epsilon) -plot for optimum + check limits:
 fs = ['linear']#, 'GMM']
 models = ['linear']# + ['boosting']
 

@@ -1,3 +1,15 @@
+import numpy as np
+import matplotlib as plt
+
+from source.run import run
+
+conf = dict()
+conf['max_mu'] = 100
+conf['n_samples'] = 50000
+conf['n_dim'] = 2
+conf['max_cov'] = 100
+conf['n_components'] = 30
+
 #ise_regular(epsilon) - plot for optimum + check limits, + variance plot :
 
 fs = ['linear']#, 'GMM']

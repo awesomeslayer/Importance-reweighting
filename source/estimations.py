@@ -1,3 +1,6 @@
+import numpy as np
+from scipy.special import logsumexp
+
 def importance_sampling_error(err, p, g, g_sample):
     """
     :param err: log-error function

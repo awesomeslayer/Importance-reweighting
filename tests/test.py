@@ -1,3 +1,26 @@
+#from functools import partial
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.special import logsumexp
+#from scipy import integrate
+#from sklearn.mixture import GaussianMixture
+#from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.neighbors import KernelDensity
+from sklearn.model_selection import KFold, ShuffleSplit
+from sklearn.model_selection import GridSearchCV
+from tqdm import trange, tqdm
+#from datetime import datetime
+
+from metrics import importance_sampling_error, monte_carlo_error, monte_carlo_error_variance, importance_sampling_error_variance, ISE_clip    
+
+conf = dict()
+
+conf['max_mu'] = 100
+conf['n_samples'] = 50000
+conf['n_dim'] = 2
+conf['max_cov'] = 100
+conf['n_components'] = 30
+
 def test(f_gen, model, g_gen, p_gen, n_tests, n_splits = 1, target_error = None, 
          hyperparams = {'kde_size' : ['silverman'], 
                         'epsilon_reg' : [0],
@@ -90,7 +113,7 @@ def test(f_gen, model, g_gen, p_gen, n_tests, n_splits = 1, target_error = None,
                 fig, ax = plt.subplots(figsize = (12, 12))
                 print(hyperparams['epsilon_reg'])
                 print(errors_plot)
-                ax.plot(hyperparams['epsilon_reg'], errors_plot, label = f'{x}')
+                ax.plot(hyperparams['epsilon_reg'], errors_plot)
                 plt.legend(fontsize=26)
                 ax.set_xlabel('epsilo', fontsize = 26)
                 ax.set_ylabel('errors', fontsize = 26)

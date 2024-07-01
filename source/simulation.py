@@ -1,21 +1,17 @@
-from functools import partial
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import cholesky, solve_triangular
-from scipy.special import logsumexp
-from scipy import integrate
+#from scipy import integrate
 from sklearn.mixture import GaussianMixture
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.neighbors import KernelDensity
-from sklearn.model_selection import KFold, ShuffleSplit
-from sklearn.model_selection import GridSearchCV
-from tqdm import trange, tqdm
-from datetime import datetime
+
+#from sklearn.neighbors import KernelDensity
+#from sklearn.model_selection import KFold, ShuffleSplit
+#from sklearn.model_selection import GridSearchCV
+#from tqdm import trange, tqdm
+#from datetime import datetime
 
 np.seterr(divide = 'ignore')
 np.random.seed(42)
-
-conf = dict()
 
 def random_covariance_matrix(n_dim):
     """
