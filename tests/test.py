@@ -9,9 +9,11 @@ from source.estimations import (
     importance_sampling_error,
     monte_carlo_error,
     monte_carlo_error_variance,
-    importance_sampling_error_variance, 
+    importance_sampling_error_variance,
     ISE_clip,
 )
+
+from source.mandoline import mandoline_error
 
 
 def test(
@@ -91,6 +93,7 @@ def test(
             p_test = p_sample[test_idx]
 
             model.fit(g_train, f(g_train))
+
             err = lambda X: np.log(np.abs(f(X) - model.predict(X)))
 
             estim_list = [
@@ -107,8 +110,6 @@ def test(
                 g_estim = lambda X: kde.score_samples(X)
 
             # our estimations:
-
-            # may be add flag to print plots of params using counted errors for each param ?
 
             if "MCE_p" in target_error:
                 iter_err["MCE_p"] += [monte_carlo_error(err, p_test)]
@@ -151,14 +152,17 @@ def test(
                     plt.title(f"max_cov = {conf['max_cov']}")
                     ax.set_xlabel("epsilon", fontsize=26)
                     ax.set_ylabel("reg_error", fontsize=26)
-                    ax.legend((f"max_cov = {conf['max_cov']}"))
-                    plt.savefig("./plots/results/reg_extr.pdf")
+                    ax.set_xscale("log")
+                    plt.savefig(f"./plots/results/reg_extr_cov{conf['max_cov']}.pdf")
                     plt.tight_layout()
-                    plt.show()
+                    # plt.show()
 
                 iter_err["ISE_g_regular"] += [best_error["ISE_g_regular"]]
 
             if "ISE_g_clip" in target_error:
+                print(
+                    f"Check limit for IS on epsilon = 0, delta = {importance_sampling_error(err, p, g, g_test) - ISE_clip(err, p, g, g_test, 1e10)}"
+                )
                 errors_plot = []
                 for epsilon in hyperparams["epsilon_clip"]:
                     error = ISE_clip(err, p, g, g_test, epsilon)
@@ -175,15 +179,19 @@ def test(
                     plt.title(f"max_cov = {conf['max_cov']}")
                     ax.set_xlabel("epsilon", fontsize=26)
                     ax.set_ylabel("clip_error", fontsize=26)
-                    plt.savefig("./plots/results/clip_extr.pdf")
+                    plt.savefig(f"./plots/results/clip_extr_cov{conf['max_cov']}.pdf")
                     plt.tight_layout()
-                    plt.show()
+                    # plt.show()
 
                 iter_err["ISE_g_clip"] += [best_error["ISE_g_clip"]]
 
             if "ISE_g_estim_clip" in target_error:
+                print(
+                    f"Check limit for IS on epsilon = 0, delta = {importance_sampling_error(err, p, g_estim, g_test) - ISE_clip(err, p, g_estim, g_test, 1e10)}"
+                )
                 errors_plot = []
                 for epsilon in hyperparams["epsilon_clip"]:
+                    print()
                     error = ISE_clip(err, p, g_estim, g_test, epsilon)
                     errors_plot.append(error)
                     if error < best_error["ISE_g_estim_clip"]:
@@ -196,44 +204,49 @@ def test(
                     plt.title(f"max_cov = {conf['max_cov']}")
                     ax.set_xlabel("epsilon", fontsize=26)
                     ax.set_ylabel("clip_estim_error", fontsize=26)
-                    plt.savefig("../plots/results/clip_estim_extr.pdf")
+                    plt.savefig(
+                        f"./plots/results/clip_estim_extr_cov{conf['max_cov']}.pdf"
+                    )
                     plt.tight_layout()
-                    plt.show()
+                    # plt.show()
 
                 iter_err["ISE_g_estim_clip"] += [best_error["ISE_g_estim_clip"]]
 
+            if "Mandoline" in target_error:
+                mandoline_error(g_train, g_test, model, f)
+
             # our variance estimations:
-            if "MCE_g_variance" in target_error:
-                iter_err["MCE_g_variance"] += [monte_carlo_error_variance(err, g_test)]
+            # if "MCE_g_variance" in target_error:
+            #     iter_err["MCE_g_variance"] += [monte_carlo_error_variance(err, g_test)]
 
-            if "ISE_g_variance" in target_error:
-                iter_err["ISE_g_variance"] += [
-                    importance_sampling_error_variance(err, p, g, g_test)
-                ]
+            # if "ISE_g_variance" in target_error:
+            #     iter_err["ISE_g_variance"] += [
+            #         importance_sampling_error_variance(err, p, g, g_test)
+            #     ]
 
-            if "ISE_g_estim_variance" in target_error:
-                iter_err["ISE_g_estim_variance"] += [
-                    importance_sampling_error_variance(err, p, g_estim, g_test)
-                ]
+            # if "ISE_g_estim_variance" in target_error:
+            #     iter_err["ISE_g_estim_variance"] += [
+            #         importance_sampling_error_variance(err, p, g_estim, g_test)
+            #     ]
 
-            if "ISE_g_regular_variance" in target_error:
-                for i, epsilon_temp in enumerate(hyperparams["epsilon_reg"]):
-                    g_estim_new = lambda X: np.log(
-                        (1 - epsilon_temp) * np.exp(g_estim(X))
-                        + epsilon_temp / (conf["max_mu"] ** 2)
-                    )
-                    error = importance_sampling_error_variance(
-                        err, p, g_estim_new, g_test
-                    )
-                    if error < best_error["ISE_g_regular_variance"]:
-                        best_error["ISE_g_regular_variance"] = error
-                        best_epsilon["ISE_g_regular_variance"] = hyperparams[
-                            "epsilon_reg"
-                        ][i]
+            # if "ISE_g_regular_variance" in target_error:
+            #     for i, epsilon_temp in enumerate(hyperparams["epsilon_reg"]):
+            #         g_estim_new = lambda X: np.log(
+            #             (1 - epsilon_temp) * np.exp(g_estim(X))
+            #             + epsilon_temp / (conf["max_mu"] ** 2)
+            #         )
+            #         error = importance_sampling_error_variance(
+            #             err, p, g_estim_new, g_test
+            #         )
+            #         if error < best_error["ISE_g_regular_variance"]:
+            #             best_error["ISE_g_regular_variance"] = error
+            #             best_epsilon["ISE_g_regular_variance"] = hyperparams[
+            #                 "epsilon_reg"
+            #             ][i]
 
-                iter_err["ISE_g_regular_variance"] += [
-                    best_error["ISE_g_regular_variance"]
-                ]
+            #     iter_err["ISE_g_regular_variance"] += [
+            #         best_error["ISE_g_regular_variance"]
+            #     ]
 
             # if 'ISE_g_clip_variance' in target_error:
 

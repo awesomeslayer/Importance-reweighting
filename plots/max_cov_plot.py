@@ -10,8 +10,8 @@ conf["n_dim"] = 2
 conf["max_cov"] = 100
 conf["n_components"] = 30
 
-fs = ["linear"]  # , 'GMM']
-models = ["linear"]  # + ['boosting']
+fs = ["linear"]  # , ['GMM']
+models = ["linear"]  # ['boosting']
 
 n_splits = 1
 xs = ["MCE_g", "ISE_g", "ISE_g_regular", "ISE_g_estim"]
@@ -28,7 +28,31 @@ hyperparams = {
 }
 
 
-max_cov_list = [1, 3, 5, 10, 25, 50, 70, 100]
+max_cov_list = [
+    1,
+    2,
+    3,
+    5,
+    7,
+    10,
+    15,
+    20,
+    25,
+    30,
+    40,
+    45,
+    50,
+    65,
+    70,
+    75,
+    85,
+    100,
+    125,
+    150,
+    175,
+    190,
+    200,
+]
 
 for f in fs:
     for model in models:
@@ -40,7 +64,7 @@ for f in fs:
                 error[x] = 0
 
             elem = run(
-                conf, f, model, n_splits, xs, y, n_tests=10, hyperparams=hyperparams
+                conf, f, model, n_splits, xs, y, n_tests=2, hyperparams=hyperparams
             )
             for x in xs:
                 error[x] += elem["mape"][x]
@@ -52,6 +76,7 @@ for x in xs:
 plt.legend(fontsize=26)
 ax.set_xlabel("max_cov", fontsize=26)
 ax.set_ylabel("errors", fontsize=26)
-plt.savefig("../plots/results/max_cov.pdf")
+ax.set_xscale("log")
+plt.savefig("./plots/results/max_cov.pdf")
 plt.tight_layout()
-plt.show()
+# plt.show()
