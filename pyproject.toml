@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "spatial-errors"
+version = "0.1.0"
+description = "Task for LARSS Lab, containing experiments about fixing IS problems"
+authors = ["Most_hated <ftalick01@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
