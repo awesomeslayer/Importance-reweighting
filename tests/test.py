@@ -1,27 +1,14 @@
-#from functools import partial
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import logsumexp
-#from scipy import integrate
-#from sklearn.mixture import GaussianMixture
-#from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.neighbors import KernelDensity
 from sklearn.model_selection import KFold, ShuffleSplit
 from sklearn.model_selection import GridSearchCV
 from tqdm import trange, tqdm
-#from datetime import datetime
 
-from metrics import importance_sampling_error, monte_carlo_error, monte_carlo_error_variance, importance_sampling_error_variance, ISE_clip    
+from source.estimations import importance_sampling_error, monte_carlo_error, monte_carlo_error_variance, importance_sampling_error_variance, ISE_clip    
 
-conf = dict()
-
-conf['max_mu'] = 100
-conf['n_samples'] = 50000
-conf['n_dim'] = 2
-conf['max_cov'] = 100
-conf['n_components'] = 30
-
-def test(f_gen, model, g_gen, p_gen, n_tests, n_splits = 1, target_error = None, 
+def test(conf,  f_gen, model, g_gen, p_gen, n_tests, n_splits = 1, target_error = None, 
          hyperparams = {'kde_size' : ['silverman'], 
                         'epsilon_reg' : [0],
                         'epsilon_clip' : [0]}):
@@ -100,45 +87,75 @@ def test(f_gen, model, g_gen, p_gen, n_tests, n_splits = 1, target_error = None,
                 
             if 'ISE_g_regular' in target_error:
                 errors_plot = []
-                for i, epsilon_temp in enumerate(hyperparams['epsilon_reg']):
-                    g_estim_new = lambda X: np.log((1 - epsilon_temp)*np.exp(g_estim(X)) + epsilon_temp/(conf['max_mu']**2)) 
+                for epsilon in hyperparams['epsilon_reg']:
+                    g_estim_new = lambda X: np.log((1 - epsilon)*np.exp(g_estim(X)) + epsilon/(conf['max_mu']**2)) 
                     
                     error = importance_sampling_error(err, p, g_estim_new, g_test)
                     errors_plot.append(error)
+                    if (epsilon == 0):
+                        print(f"Check limit for IS on epsilon = 0, delta = {error - importance_sampling_error(err, p, g_estim, g_test)}")
+                    
                     
                     if error < best_error['ISE_g_regular']:
                         best_error['ISE_g_regular'] = error
-                        best_epsilon['ISE_g_regular'] = hyperparams['epsilon_reg'][i]
+                        best_epsilon['ISE_g_regular'] = epsilon
                 
-                fig, ax = plt.subplots(figsize = (12, 12))
-                print(hyperparams['epsilon_reg'])
-                print(errors_plot)
-                ax.plot(hyperparams['epsilon_reg'], errors_plot)
-                plt.legend(fontsize=26)
-                ax.set_xlabel('epsilo', fontsize = 26)
-                ax.set_ylabel('errors', fontsize = 26)
-                ax.set_xscale('log')
-                plt.tight_layout()
-                plt.show() 
+                if(target_error == ['ISE_g_regular']):
+                    print("awesomebread")
+                    fig, ax = plt.subplots(figsize = (12, 12))
+                    ax.plot(hyperparams['epsilon_reg'], errors_plot)
+                    plt.legend(fontsize=26)
+                    ax.set_xlabel('epsilon', fontsize = 26)
+                    ax.set_ylabel('reg_error', fontsize = 26)
+                    #ax.set_xscale('log')
+                    plt.savefig("/home/fatalick/Projects/Spatial_errors/Spatial_Errors/plots/results/reg_extr.pdf")
+                    plt.tight_layout()
+                    plt.show() 
 
                 iter_err['ISE_g_regular'] += [best_error['ISE_g_regular']]
                 
             if 'ISE_g_clip' in target_error:
-                for i in range(len(hyperparams['epsilon_clip'])):
-                    error = ISE_clip(err, p, g, g_test, hyperparams['epsilon_clip'][i])
+                errors_plot = []
+                for epsilon in hyperparams['epsilon_clip']:
+                    error = ISE_clip(err, p, g, g_test, epsilon)
+                    errors_plot.append(error)
                     if error < best_error['ISE_g_clip']:
                         best_error['ISE_g_clip'] = error
-                        best_epsilon['ISE_g_clip'] = hyperparams['epsilon_clip'][i]
-                
+                        best_epsilon['ISE_g_clip'] = epsilon
+                        
+                if(target_error == ['ISE_g_clip', 'ISE_g_estim_clip']):
+                    fig, ax = plt.subplots(figsize = (12, 12))
+                    ax.plot(hyperparams['epsilon_reg'], errors_plot)
+                    plt.legend(fontsize=26)
+                    ax.set_xlabel('epsilon', fontsize = 26)
+                    ax.set_ylabel('clip_error', fontsize = 26)
+                    #ax.set_xscale('log')
+                    plt.savefig("../plots/results/clip_extr.pdf")
+                    plt.tight_layout()
+                    plt.show() 
+                    
                 iter_err['ISE_g_clip'] += [best_error['ISE_g_clip']]
                 
             if 'ISE_g_estim_clip' in target_error:
-                for i in range(len(hyperparams['epsilon_clip'])):
-                    error = ISE_clip(err, p, g_estim, g_test, hyperparams['epsilon_clip'][i])
+                errors_plot = []
+                for epsilon in hyperparams['epsilon_clip']:
+                    error = ISE_clip(err, p, g_estim, g_test, epsilon)
+                    errors_plot.append(error)
                     if error < best_error['ISE_g_estim_clip']:
                         best_error['ISE_g_estim_clip'] = error
-                        best_epsilon['ISE_g_estim_clip'] = hyperparams['epsilon_clip'][i]
-                
+                        best_epsilon['ISE_g_estim_clip'] = epsilon
+                        
+                if(target_error == ['ISE_g_clip', 'ISE_g_estim_clip']):
+                    fig, ax = plt.subplots(figsize = (12, 12))
+                    ax.plot(hyperparams['epsilon_reg'], errors_plot)
+                    plt.legend(fontsize=26)
+                    ax.set_xlabel('epsilon', fontsize = 26)
+                    ax.set_ylabel('clip_estim_error', fontsize = 26)
+                    #ax.set_xscale('log')
+                    plt.savefig("../plots/results/clip_estim_extr.pdf")
+                    plt.tight_layout()
+                    plt.show() 
+                    
                 iter_err['ISE_g_estim_clip'] += [best_error['ISE_g_estim_clip']]
             
             #our variance estimations:
