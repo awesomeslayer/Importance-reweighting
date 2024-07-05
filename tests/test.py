@@ -97,12 +97,15 @@ def test(
                 g_estim = lambda X: kde_sk.score_samples(X)
 
             if "MCE_p" in target_error:
+                print('MCE_p')
                 iter_err["MCE_p"] += [monte_carlo_error(err, p_test)]
 
             if "MCE_g" in target_error:
+                print('MCE_g')
                 iter_err["MCE_g"] += [monte_carlo_error(err, g_test)]
 
             if "ISE_g" in target_error:
+                print('ISE_g')
                 iter_err["ISE_g"] += [importance_sampling_error(err, p, g, g_test)]
 
             if "ISE_g_estim" in target_error:

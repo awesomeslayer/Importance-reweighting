@@ -18,19 +18,19 @@ def mandoline_error(g_test, p_test, model, f, err, n_slices=3):
     D_src = slice_clusterisation(g_test, n_slices=3)
     D_tgt = slice_clusterisation(p_test, n_slices=3)
 
-    # print(D_src)
     empirical_mat_list_src = [get_correct(model, g_test, f(g_test))]
-
+    
+    est = estimate_performance(
+                D_src, D_tgt, None, empirical_mat_list_src)
+    
     return logsumexp(
         np.log(
-            estimate_performance(
-                D_src, D_tgt, np.array([(0, 1), (1, 2), (0, 2)]), empirical_mat_list_src
-            ).density_ratios
+           est.density_ratios
         )
         + err(g_test)
     ) - np.log(
         g_test.shape[0]
-    )  # logsumexp(err(g_test) + log_weights) - np.log(g_test.shape[0])
+    ) 
 
 
 def get_correct(model, X, labels, tolerance=1e-5):

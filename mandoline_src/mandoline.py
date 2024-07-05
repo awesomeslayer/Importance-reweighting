@@ -213,7 +213,6 @@ def estimate_performance(
     # Self-normalized importance weights
     weights = density_ratios / np.sum(density_ratios)
 
-    print(f"sum of d-r Mandoline:\{logsumexp(np.log(density_ratios))}")
     all_estimates = []
     for mat_src in empirical_mat_list_src:
         # Estimates is a 1-D array of estimates for each mat e.g.

@@ -14,8 +14,8 @@ model = "linear"  # ['boosting']
 
 n_splits = 1
 xs = [
-    # "MCE_g",
-    # "ISE_g",
+     "MCE_g",
+     "ISE_g",
     # "ISE_g_regular",
     # "ISE_g_estim",
     # "ISE_g_clip",
@@ -30,15 +30,15 @@ for x in xs:
 
 hyperparams_dict = {
     "kde_size": ["scott"],
-    "ISE_g_regular": np.arange(0.1, 1, 0.1),
-    "ISE_g_clip": np.arange(0.1, 1, 0.1),
-    "ISE_g_estim_clip": np.arange(0.1, 1, 0.1),
+    "ISE_g_regular": np.arange(0.1, 1, 0.6),
+    "ISE_g_clip": np.arange(0.1, 1, 0.6),
+    "ISE_g_estim_clip": np.arange(0.1, 1, 0.6),
 }
 
 
-max_cov_list = np.arange(1, 200, 20)
-n_tests = 5
-n_hyp_tests = 5
+max_cov_list = np.arange(200, 1, -20)
+n_tests = 1
+n_hyp_tests = 1
 
 for max_cov in max_cov_list:
     conf["max_cov"] = max_cov
@@ -57,7 +57,7 @@ for max_cov in max_cov_list:
         n_tests=n_tests,
         n_hyp_tests=n_hyp_tests,
         hyperparams_dict=hyperparams_dict,
-        FindBestParam=True,
+        FindBestParam=False,
     )
     for x in xs:
         error[x] += elem["mape"][x]
