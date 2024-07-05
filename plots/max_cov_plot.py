@@ -1,6 +1,5 @@
 import numpy as np
-import matplotlib as plt
-
+import matplotlib.pyplot as plt
 from source.run import run
 
 conf = dict()
@@ -10,41 +9,59 @@ conf["n_dim"] = 2
 conf["max_cov"] = 100
 conf["n_components"] = 30
 
-fs = ["linear"]  # , 'GMM']
-models = ["linear"]  # + ['boosting']
+f = "linear"  # , ['GMM']
+model = "linear"  # ['boosting']
 
 n_splits = 1
-xs = ["MCE_g", "ISE_g", "ISE_g_regular", "ISE_g_estim"]
+xs = [
+    # "MCE_g",
+    # "ISE_g",
+    # "ISE_g_regular",
+    # "ISE_g_estim",
+    # "ISE_g_clip",
+    # "ISE_g_estim_clip",
+    "Mandoline",
+]
 y = "MCE_p"
 
 errors_plot = {}
 for x in xs:
     errors_plot[x] = []
 
-hyperparams = {
-    "kde_size": ["silverman"],
-    "epsilon_reg": np.arange(0, 1, 0.1),
-    "epsilon_clip": np.arange(0.1, 0.9, 0.1),
+hyperparams_dict = {
+    "kde_size": ["scott"],
+    "ISE_g_regular": np.arange(0.1, 1, 0.1),
+    "ISE_g_clip": np.arange(0.1, 1, 0.1),
+    "ISE_g_estim_clip": np.arange(0.1, 1, 0.1),
 }
 
 
-max_cov_list = [1, 3, 5, 10, 25, 50, 70, 100]
+max_cov_list = np.arange(1, 200, 20)
+n_tests = 5
+n_hyp_tests = 5
 
-for f in fs:
-    for model in models:
-        for max_cov in max_cov_list:
-            conf["max_cov"] = max_cov
+for max_cov in max_cov_list:
+    conf["max_cov"] = max_cov
 
-            error = {}
-            for x in xs:
-                error[x] = 0
+    error = {}
+    for x in xs:
+        error[x] = 0
 
-            elem = run(
-                conf, f, model, n_splits, xs, y, n_tests=10, hyperparams=hyperparams
-            )
-            for x in xs:
-                error[x] += elem["mape"][x]
-                errors_plot[x].append(error[x])
+    elem = run(
+        conf,
+        f,
+        model,
+        n_splits,
+        xs,
+        y,
+        n_tests=n_tests,
+        n_hyp_tests=n_hyp_tests,
+        hyperparams_dict=hyperparams_dict,
+        FindBestParam=True,
+    )
+    for x in xs:
+        error[x] += elem["mape"][x]
+        errors_plot[x].append(error[x])
 
 fig, ax = plt.subplots(figsize=(12, 12))
 for x in xs:
@@ -52,6 +69,7 @@ for x in xs:
 plt.legend(fontsize=26)
 ax.set_xlabel("max_cov", fontsize=26)
 ax.set_ylabel("errors", fontsize=26)
-plt.savefig("../plots/results/max_cov.pdf")
+ax.set_xscale("log")
+plt.savefig("./plots/results/max_cov.pdf")
 plt.tight_layout()
-plt.show()
+# plt.show()

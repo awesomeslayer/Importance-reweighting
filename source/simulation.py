@@ -1,18 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import cholesky, solve_triangular
-
-# from scipy import integrate
 from sklearn.mixture import GaussianMixture
-
-# from sklearn.neighbors import KernelDensity
-# from sklearn.model_selection import KFold, ShuffleSplit
-# from sklearn.model_selection import GridSearchCV
-# from tqdm import trange, tqdm
-# from datetime import datetime
 
 np.seterr(divide="ignore")
 np.random.seed(42)
+
+
+class DummyModel:
+    def __init__(self):
+        self.func = None
+
+    def fit(self, X, y):
+        self.func = random_linear_func(
+            {"n_dim": X.shape[1], "max_mu": np.max(X.sum(axis=1))}
+        )
+
+    def predict(self, X):
+        return self.func(X)
 
 
 def random_covariance_matrix(n_dim):
