@@ -168,7 +168,6 @@ def weighted_estimator(weights: Optional[np.ndarray], mat: np.ndarray):
     Returns:
         Length r np.ndarray of weighted means.
     """
-    print(f"weigths: {np.sum(weights)}")
     assert np.sum(weights) - 1 < 1e-5, "`weights` must sum to 1."
     if weights is None:
         return np.mean(mat, axis=0)
@@ -214,8 +213,7 @@ def estimate_performance(
     # Self-normalized importance weights
     weights = density_ratios / np.sum(density_ratios)
 
-    print(f"density ratios:\n{density_ratios}")
-    print(f"sum of d-r:\n{logsumexp(np.log(density_ratios))}")
+    print(f"sum of d-r Mandoline:\{logsumexp(np.log(density_ratios))}")
     all_estimates = []
     for mat_src in empirical_mat_list_src:
         # Estimates is a 1-D array of estimates for each mat e.g.

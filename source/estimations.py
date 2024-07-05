@@ -10,7 +10,7 @@ def importance_sampling_error(err, p, g, g_sample):
     :param g_sample:
     :return: log-ISE
     """
-    print(f"sum of weights IS:{logsumexp(p(g_sample) - g(g_sample))}")
+    # print(f"sum of weights IS:{logsumexp(p(g_sample) - g(g_sample))}")
     return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(
         g_sample.shape[0]
     )

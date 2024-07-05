@@ -14,12 +14,12 @@ model = "linear"  # ['boosting']
 
 n_splits = 1
 xs = [
-    "MCE_g",
-    "ISE_g",
-    "ISE_g_regular",
-    "ISE_g_estim",
-    "ISE_g_clip",
-    "ISE_g_estim_clip",
+    # "MCE_g",
+    # "ISE_g",
+    # "ISE_g_regular",
+    # "ISE_g_estim",
+    # "ISE_g_clip",
+    # "ISE_g_estim_clip",
     "Mandoline",
 ]
 y = "MCE_p"
@@ -30,39 +30,15 @@ for x in xs:
 
 hyperparams_dict = {
     "kde_size": ["scott"],
-    "ISE_g_regular": [0.2, 0.1],
-    "ISE_g_clip": [0.1, 0.2],
-    "ISE_g_estim_clip": [0.2, 0.1],
+    "ISE_g_regular": np.arange(0.1, 1, 0.1),
+    "ISE_g_clip": np.arange(0.1, 1, 0.1),
+    "ISE_g_estim_clip": np.arange(0.1, 1, 0.1),
 }
 
 
-max_cov_list = [
-    1,
-    # 2,
-    # 3,
-    5,
-    # 7,
-    # 10,
-    # 15,
-    # 20,
-    # 25,
-    # 30,
-    # 40,
-    # 45,
-    # 50,
-    # 65,
-    # 70,
-    # 75,
-    # 85,
-    # 100,
-    # 125,
-    # 150,
-    # 175,
-    # 190,
-    # 200,
-]
-n_tests = 1
-n_hyp_tests = 1
+max_cov_list = np.arange(1, 200, 20)
+n_tests = 5
+n_hyp_tests = 5
 
 for max_cov in max_cov_list:
     conf["max_cov"] = max_cov
@@ -81,6 +57,7 @@ for max_cov in max_cov_list:
         n_tests=n_tests,
         n_hyp_tests=n_hyp_tests,
         hyperparams_dict=hyperparams_dict,
+        FindBestParam=True,
     )
     for x in xs:
         error[x] += elem["mape"][x]

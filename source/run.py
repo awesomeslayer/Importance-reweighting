@@ -51,28 +51,12 @@ def extr_plots(conf, x_hyp, mape_dict, hyp_dict):
         # plt.show()
 
 
-def run_test_case(
-    conf,
-    f_gen,
-    model,
-    g_gen,
-    p_gen,
-    n_tests,
-    n_splits,
-    x,
-    y,
-    n_hyp_tests=5,
-    hyperparams_dict={
-        "kde_size": ["scott"],
-        "ISE_g_regular": [0],
-        "ISE_g_clip": [0],
-        "ISE_g_estim_clip": [0],
-    },
+def hyperparams_search(
+    conf, f_gen, model, g_gen, p_gen, n_hyp_tests, n_splits, x_hyp, y, hyperparams_dict
 ):
 
     hyperparams = {"kde_size": "scott"}
     metrics_list_hyp = []
-    x_hyp = ["ISE_g_regular", "ISE_g_estim_clip", "ISE_g_clip"]
     size = len(hyperparams_dict["ISE_g_regular"])  #
     for x_temp in x_hyp:
         if size != len(hyperparams_dict[x_temp]):
@@ -108,11 +92,54 @@ def run_test_case(
 
         metrics_list_hyp += [(hyperparams, metrics_dict)]
 
-    print(metrics_list_hyp)
-    best_hyperparams, mape_dict, hyp_dict = find_best_hyp(x_hyp, metrics_list_hyp)
-    print(f"best_hyperparams for max_cov {conf['max_cov']}:\n{best_hyperparams}")
+    return metrics_list_hyp, log_err_hyp_list
 
-    extr_plots(conf, x_hyp, mape_dict, hyp_dict)
+
+def run_test_case(
+    conf,
+    f_gen,
+    model,
+    g_gen,
+    p_gen,
+    n_tests,
+    n_splits,
+    x,
+    y,
+    n_hyp_tests=5,
+    hyperparams_dict={
+        "kde_size": ["scott"],
+        "ISE_g_regular": [0],
+        "ISE_g_clip": [0],
+        "ISE_g_estim_clip": [0],
+    },
+    FindBestParam=True,
+):
+    best_hyperparams = {
+        "kde_size": "scott",
+        "ISE_g_regular": 0,
+        "ISE_g_clip": 0,
+        "ISE_g_estim_clip": 0,
+    }
+
+    if FindBestParam:
+        x_hyp = ["ISE_g_regular", "ISE_g_estim_clip", "ISE_g_clip"]
+        metrics_list_hyp, log_err_hyp_list = hyperparams_search(
+            conf,
+            f_gen,
+            model,
+            g_gen,
+            p_gen,
+            n_hyp_tests,
+            n_splits,
+            x_hyp,
+            y,
+            hyperparams_dict,
+        )
+        best_hyperparams, mape_dict, hyp_dict = find_best_hyp(x_hyp, metrics_list_hyp)
+
+        print(f"best_hyperparams for max_cov {conf['max_cov']}:\n{best_hyperparams}")
+
+        extr_plots(conf, x_hyp, mape_dict, hyp_dict)
 
     log_err = test(
         conf,
@@ -127,12 +154,6 @@ def run_test_case(
     )
 
     metrics_dict = {"mape": {}, "rmse": {}}
-    print(f"log_err:{log_err}")
-    for i in range(size):
-        log_err += log_err_hyp_list[i]
-
-    print(f"log_err_new{log_err}")
-
     y_err = np.exp(log_err[y])
     for x_temp in x:
         x_err = np.exp(log_err[x_temp])
@@ -157,6 +178,7 @@ def run(
         "ISE_g_clip": [0],
         "ISE_g_estim_clip": [0],
     },
+    FindBestParam=True,
 ):
 
     f_gens = {
@@ -178,4 +200,5 @@ def run(
         y=y,
         n_hyp_tests=n_hyp_tests,
         hyperparams_dict=hyperparams_dict,
+        FindBestParam=FindBestParam,
     )

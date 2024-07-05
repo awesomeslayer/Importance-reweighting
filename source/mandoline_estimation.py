@@ -1,6 +1,7 @@
 import numpy as np
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
 from scipy.special import logsumexp
 from sklearn.model_selection import KFold, ShuffleSplit
 from tqdm import trange
@@ -9,11 +10,15 @@ from mandoline_src.mandoline import estimate_performance
 
 
 def mandoline_error(g_test, p_test, model, f, err, n_slices=3):
-    D_src = slice_prediction(p_test, model, n_slices=n_slices)
-    D_tgt = slice_prediction(
-        g_test, model, n_slices=n_slices
-    )  # D_tgt has shape (n_tgt x n_slices)
+    # D_src = slice_prediction(g_test, model, n_slices=n_slices)
+    # D_tgt = slice_prediction(
+    #    p_test, model, n_slices=n_slices
+    # )
 
+    D_src = slice_clusterisation(g_test, n_slices=3)
+    D_tgt = slice_clusterisation(p_test, n_slices=3)
+
+    # print(D_src)
     empirical_mat_list_src = [get_correct(model, g_test, f(g_test))]
 
     return logsumexp(
@@ -58,6 +63,16 @@ def slice_prediction(X, model, n_slices=2):
     return D
 
 
-def slice_clastorisation():
-    # Use K-means?
-    return 0
+def slice_clusterisation(X, n_slices=3):
+    # visualize_GMM_config(config, alpha):
+    kmeans = KMeans(n_clusters=n_slices, n_init="auto")
+    kmeans.fit(X)
+    D = np.zeros((len(X), n_slices))
+    for i in range(n_slices):
+        for j in range(len(X)):
+            if kmeans.labels_[j] == i:
+                D[j][i] = 1
+            else:
+                D[j][i] = -1
+
+    return D
