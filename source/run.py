@@ -1,6 +1,7 @@
 from functools import partial
 import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
+import matplotlib.pyplot as plt
 
 from tests.metrics import mape, rmse, variance
 from tests.test import test
@@ -9,20 +10,45 @@ from .simulation import (
     random_gaussian_mixture_func,
     random_GMM_samples,
     random_uniform_samples,
+    DummyModel,
 )
 
 
-class DummyModel:
-    def __init__(self):
-        self.func = None
+def find_best_hyp(x_hyp, metrics_list_hyp):
+    best_hyperparams = {"kde_size": "scott"}
+    hyp_dict = {}
+    mape_dict = {}
+    for x_temp in x_hyp:
+        hyp_dict[x_temp] = []
+        mape_dict[x_temp] = []
 
-    def fit(self, X, y):
-        self.func = random_linear_func(
-            {"n_dim": X.shape[1], "max_mu": np.max(X.sum(axis=1))}
-        )
+    for x_temp in x_hyp:
+        for i in range(len(metrics_list_hyp)):
+            hyp_dict[x_temp] += [metrics_list_hyp[i][0][x_temp]]
+            mape_dict[x_temp] += [metrics_list_hyp[i][1]["mape"][x_temp]]
 
-    def predict(self, X):
-        return self.func(X)
+        best_hyperparams[x_temp] = hyp_dict[x_temp][
+            mape_dict[x_temp].index(min(mape_dict[x_temp]))
+        ]
+
+    return best_hyperparams, mape_dict, hyp_dict
+
+
+def extr_plots(conf, x_hyp, mape_dict, hyp_dict):
+    # print(f"mape_dict\n{mape_dict}")
+    # print(f"hyp_dict\n{hyp_dict}")
+
+    for x_temp in x_hyp:
+        fig, ax = plt.subplots(figsize=(12, 12))
+        ax.plot(hyp_dict[x_temp], mape_dict[x_temp], label=f"{x_temp}")
+        plt.legend(fontsize=26)
+        plt.title(f"max_cov{conf['max_cov']}")
+        ax.set_xlabel(f"param for {x_temp}", fontsize=26)
+        ax.set_ylabel("mape", fontsize=26)
+        # ax.set_xscale('log')
+        plt.savefig(f"./plots/results/{x_temp}_{conf['max_cov']}.pdf")
+        plt.tight_layout()
+        # plt.show()
 
 
 def run_test_case(
@@ -35,11 +61,58 @@ def run_test_case(
     n_splits,
     x,
     y,
-    save_fig=False,
-    show_fig=False,
-    return_metrics=False,
-    hyperparams={"kde_size": ["scott"], "epsilon_reg": [0], "epsilon_clip": [0]},
+    n_hyp_tests=5,
+    hyperparams_dict={
+        "kde_size": ["scott"],
+        "ISE_g_regular": [0],
+        "ISE_g_clip": [0],
+        "ISE_g_estim_clip": [0],
+    },
 ):
+
+    hyperparams = {"kde_size": "scott"}
+    metrics_list_hyp = []
+    x_hyp = ["ISE_g_regular", "ISE_g_estim_clip", "ISE_g_clip"]
+    size = len(hyperparams_dict["ISE_g_regular"])  #
+    for x_temp in x_hyp:
+        if size != len(hyperparams_dict[x_temp]):
+            print("ERROR, LENGTHS OF PARAMS MUST BE SIMILAR")
+            return "ERROR"
+    log_err_hyp_list = []
+    for i in range(size):
+
+        hyperparams = {"kde_size": "scott"}
+        for x_temp in x_hyp:
+            hyperparams[x_temp] = hyperparams_dict[x_temp][i]
+
+        log_err_hyp_list += [
+            test(
+                conf,
+                f_gen=f_gen,
+                model=model,
+                g_gen=g_gen,
+                p_gen=p_gen,
+                n_tests=n_hyp_tests,
+                n_splits=n_splits,
+                target_error=x_hyp + [y],
+                hyperparams=hyperparams,
+            )
+        ]
+
+        metrics_dict = {"mape": {}, "rmse": {}}
+        y_err = np.exp(log_err_hyp_list[i][y])
+        for x_temp in x_hyp:
+            x_err = np.exp(log_err_hyp_list[i][x_temp])
+            metrics_dict["mape"][x_temp] = mape(x_err, y_err)
+            metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
+
+        metrics_list_hyp += [(hyperparams, metrics_dict)]
+
+    print(metrics_list_hyp)
+    best_hyperparams, mape_dict, hyp_dict = find_best_hyp(x_hyp, metrics_list_hyp)
+    print(f"best_hyperparams for max_cov {conf['max_cov']}:\n{best_hyperparams}")
+
+    extr_plots(conf, x_hyp, mape_dict, hyp_dict)
 
     log_err = test(
         conf,
@@ -50,20 +123,23 @@ def run_test_case(
         n_tests=n_tests,
         n_splits=n_splits,
         target_error=x + [y],
-        hyperparams=hyperparams,
+        hyperparams=best_hyperparams,
     )
 
-    metrics_dict = {"mape": {}, "rmse": {}, "variance": {}}
+    metrics_dict = {"mape": {}, "rmse": {}}
+    print(f"log_err:{log_err}")
+    for i in range(size):
+        log_err += log_err_hyp_list[i]
+
+    print(f"log_err_new{log_err}")
 
     y_err = np.exp(log_err[y])
     for x_temp in x:
         x_err = np.exp(log_err[x_temp])
         metrics_dict["mape"][x_temp] = mape(x_err, y_err)
         metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
-        metrics_dict["variance"][x_temp] = variance(x_err, y_err)
 
-    if return_metrics:
-        return metrics_dict
+    return metrics_dict
 
 
 def run(
@@ -73,8 +149,14 @@ def run(
     n_splits,
     x,
     y,
-    n_tests=1,
-    hyperparams={"kde_size": ["scott"], "epsilon_reg": [0], "epsilon_clip": [0]},
+    n_tests=5,
+    n_hyp_tests=5,
+    hyperparams_dict={
+        "kde_size": ["scott"],
+        "ISE_g_regular": [0],
+        "ISE_g_clip": [0],
+        "ISE_g_estim_clip": [0],
+    },
 ):
 
     f_gens = {
@@ -94,8 +176,6 @@ def run(
         n_splits=n_splits,
         x=x,
         y=y,
-        show_fig=True,
-        save_fig=False,
-        return_metrics=True,
-        hyperparams=hyperparams,
+        n_hyp_tests=n_hyp_tests,
+        hyperparams_dict=hyperparams_dict,
     )

@@ -1,6 +1,5 @@
 import numpy as np
-import matplotlib as plt
-
+import matplotlib.pyplot as plt
 from source.run import run
 
 conf = dict()
@@ -10,65 +9,82 @@ conf["n_dim"] = 2
 conf["max_cov"] = 100
 conf["n_components"] = 30
 
-fs = ["linear"]  # , ['GMM']
-models = ["linear"]  # ['boosting']
+f = "linear"  # , ['GMM']
+model = "linear"  # ['boosting']
 
 n_splits = 1
-xs = ["MCE_g", "ISE_g", "ISE_g_regular", "ISE_g_estim"]
+xs = [
+    "MCE_g",
+    "ISE_g",
+    "ISE_g_regular",
+    "ISE_g_estim",
+    "ISE_g_clip",
+    "ISE_g_estim_clip",
+    "Mandoline",
+]
 y = "MCE_p"
 
 errors_plot = {}
 for x in xs:
     errors_plot[x] = []
 
-hyperparams = {
-    "kde_size": ["silverman"],
-    "epsilon_reg": np.arange(0, 1, 0.1),
-    "epsilon_clip": np.arange(0.1, 0.9, 0.1),
+hyperparams_dict = {
+    "kde_size": ["scott"],
+    "ISE_g_regular": [0.2, 0.1],
+    "ISE_g_clip": [0.1, 0.2],
+    "ISE_g_estim_clip": [0.2, 0.1],
 }
 
 
 max_cov_list = [
     1,
-    2,
-    3,
+    # 2,
+    # 3,
     5,
-    7,
-    10,
-    15,
-    20,
-    25,
-    30,
-    40,
-    45,
-    50,
-    65,
-    70,
-    75,
-    85,
-    100,
-    125,
-    150,
-    175,
-    190,
-    200,
+    # 7,
+    # 10,
+    # 15,
+    # 20,
+    # 25,
+    # 30,
+    # 40,
+    # 45,
+    # 50,
+    # 65,
+    # 70,
+    # 75,
+    # 85,
+    # 100,
+    # 125,
+    # 150,
+    # 175,
+    # 190,
+    # 200,
 ]
+n_tests = 1
+n_hyp_tests = 1
 
-for f in fs:
-    for model in models:
-        for max_cov in max_cov_list:
-            conf["max_cov"] = max_cov
+for max_cov in max_cov_list:
+    conf["max_cov"] = max_cov
 
-            error = {}
-            for x in xs:
-                error[x] = 0
+    error = {}
+    for x in xs:
+        error[x] = 0
 
-            elem = run(
-                conf, f, model, n_splits, xs, y, n_tests=2, hyperparams=hyperparams
-            )
-            for x in xs:
-                error[x] += elem["mape"][x]
-                errors_plot[x].append(error[x])
+    elem = run(
+        conf,
+        f,
+        model,
+        n_splits,
+        xs,
+        y,
+        n_tests=n_tests,
+        n_hyp_tests=n_hyp_tests,
+        hyperparams_dict=hyperparams_dict,
+    )
+    for x in xs:
+        error[x] += elem["mape"][x]
+        errors_plot[x].append(error[x])
 
 fig, ax = plt.subplots(figsize=(12, 12))
 for x in xs:

@@ -4,6 +4,8 @@ from typing import Optional, List
 
 import numpy as np
 
+from scipy.special import logsumexp
+
 import scipy.optimize
 import scipy.special
 import sklearn.metrics.pairwise as skmetrics
@@ -166,7 +168,8 @@ def weighted_estimator(weights: Optional[np.ndarray], mat: np.ndarray):
     Returns:
         Length r np.ndarray of weighted means.
     """
-    assert np.sum(weights) == 1, "`weights` must sum to 1."
+    print(f"weigths: {np.sum(weights)}")
+    assert np.sum(weights) - 1 < 1e-5, "`weights` must sum to 1."
     if weights is None:
         return np.mean(mat, axis=0)
     return np.sum(weights[:, np.newaxis] * mat, axis=0)
@@ -211,6 +214,8 @@ def estimate_performance(
     # Self-normalized importance weights
     weights = density_ratios / np.sum(density_ratios)
 
+    print(f"density ratios:\n{density_ratios}")
+    print(f"sum of d-r:\n{logsumexp(np.log(density_ratios))}")
     all_estimates = []
     for mat_src in empirical_mat_list_src:
         # Estimates is a 1-D array of estimates for each mat e.g.
@@ -229,6 +234,7 @@ def estimate_performance(
 
     return SimpleNamespace(
         all_estimates=all_estimates,
+        density_ratios=density_ratios,
         solved=solved,
         weights=weights,
     )

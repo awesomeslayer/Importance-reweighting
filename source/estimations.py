@@ -10,6 +10,7 @@ def importance_sampling_error(err, p, g, g_sample):
     :param g_sample:
     :return: log-ISE
     """
+    print(f"sum of weights IS:{logsumexp(p(g_sample) - g(g_sample))}")
     return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(
         g_sample.shape[0]
     )
@@ -44,9 +45,7 @@ def ISE_clip(err, p, g, g_sample, eps):
     """
     clipped_array = []
     for p_elem, g_elem in zip(p(g_sample), g(g_sample)):
-        clipped_array.append(
-            np.log(clip(np.exp(p_elem) / np.exp(g_elem), 1 - eps, 1 + eps))
-        )
+        clipped_array.append(np.log(clip(np.exp(p_elem - g_elem), 1 - eps, 1 + eps)))
 
     return logsumexp(clipped_array + err(g_sample)) - np.log(g_sample.shape[0])
 
