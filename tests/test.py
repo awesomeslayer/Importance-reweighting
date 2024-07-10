@@ -27,7 +27,8 @@ def test(
     n_splits=1,
     target_error=None,
     hyperparams={
-        "kde_size": [5],
+        "kde_size": 5,
+        "n_slices": 3,
         "ISE_g_regular": 0,
         "ISE_g_clip": 0,
         "ISE_g_estim_clip": 0,
@@ -113,20 +114,36 @@ def test(
             if "ISE_g_estim" in target_error:
                 iter_err["ISE_g_estim"] += [
                     importance_sampling_error_default(
-                        lambda X: err(X), lambda X: p(X), lambda X: g_estim(X), g_test
+                        lambda X: np.exp(err(X)),
+                        lambda X: np.exp(p(X)),
+                        lambda X: np.exp(g_estim(X)),
+                        g_test,
                     )
                 ]
-
-                # iter_err["ISE_g_estim"] += [importance_sampling_error_default(np.exp(err), np.exp(p), np.exp(g_estim))]
 
             if "ISE_g_regular" in target_error:
                 epsilon = hyperparams["ISE_g_regular"]
                 g_estim_new = lambda X: (1 - epsilon) * np.exp(g_estim(X)) + epsilon / (
                     conf["max_mu"] ** 2
                 )
-                if(epsilon == 0):
+                if epsilon == 0:
                     logging.debug("Comparing to the truth for eps = 0:")
-                    delta = np.abs((importance_sampling_error_default(lambda X: np.exp(err(X)), lambda X: np.exp(p(X)), g_estim_new, g_test) - importance_sampling_error_default(lambda X: np.exp(err(X)), lambda X: np.exp(p(X)), lambda X: np.exp(g_estim(X)), g_test))[0])
+                    delta = np.abs(
+                        (
+                            importance_sampling_error_default(
+                                lambda X: np.exp(err(X)),
+                                lambda X: np.exp(p(X)),
+                                g_estim_new,
+                                g_test,
+                            )
+                            - importance_sampling_error_default(
+                                lambda X: np.exp(err(X)),
+                                lambda X: np.exp(p(X)),
+                                lambda X: np.exp(g_estim(X)),
+                                g_test,
+                            )
+                        )[0]
+                    )
                     logging.debug(f"delta_errors:{delta}")
                 iter_err["ISE_g_regular"] += [
                     importance_sampling_error_default(
@@ -149,7 +166,9 @@ def test(
 
             if "Mandoline" in target_error:
                 iter_err["Mandoline"] += [
-                    mandoline_error(g_test, p_test, model, f, err)
+                    mandoline_error(
+                        g_test, p_test, model, f, err, n_slices=hyperparams["Mandoline"]
+                    )
                 ]
 
         for err in target_error:

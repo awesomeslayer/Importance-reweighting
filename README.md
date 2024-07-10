@@ -10,3 +10,13 @@ neutralizes the shift. Importance sampling technique and kernel density
 estimation were used for reweighteing. In this work we are trying to implement new techiques to get better accuracy of IS methods. 
 As for example, Mandolince framework, Clip, Regularisation and KL-divergence methods.
 Finally, we will check our estimations on real data and write theoretical part of our experiments.
+
+## Guide for running from parent directory:
+```bash
+python3.11 -m plots.max_cov_plot 
+```
+
+For debug mode add flag:
+```bash
+hydra.verbose=true
+```
