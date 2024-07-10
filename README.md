@@ -14,9 +14,9 @@ Finally, we will check our estimations on real data and write theoretical part o
 ## Guide for running from parent directory:
 ```bash
 python3.11 -m plots.max_cov_plot 
-...
+```
 
 For debug mode add flag:
 ```bash
 hydra.verbose=true
-...
+```
