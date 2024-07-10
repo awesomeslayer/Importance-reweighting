@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import logging
 from scipy.stats import gaussian_kde
 from scipy.special import logsumexp
 from sklearn.neighbors import KernelDensity
@@ -8,6 +9,7 @@ from tqdm import trange
 
 from source.estimations import (
     importance_sampling_error,
+    importance_sampling_error_default,
     monte_carlo_error,
     ISE_clip,
 )
@@ -16,20 +18,20 @@ from source.mandoline_estimation import mandoline_error
 
 
 def test(
-conf,
-f_gen,
-model,
-g_gen,
-p_gen,
-n_tests,
-n_splits=1,
-target_error=None,
-hyperparams={
-    "kde_size": [5],
-    "ISE_g_regular": 0,
-    "ISE_g_clip": 0,
-    "ISE_g_estim_clip": 0,
-},
+    conf,
+    f_gen,
+    model,
+    g_gen,
+    p_gen,
+    n_tests,
+    n_splits=1,
+    target_error=None,
+    hyperparams={
+        "kde_size": [5],
+        "ISE_g_regular": 0,
+        "ISE_g_clip": 0,
+        "ISE_g_estim_clip": 0,
+    },
 ):
 
     estimation_list = [
@@ -110,20 +112,29 @@ hyperparams={
 
             if "ISE_g_estim" in target_error:
                 iter_err["ISE_g_estim"] += [
-                    importance_sampling_error_default(lambda X: err(X), lambda X: p(X), lambda X: g_estim(X), g_test)
+                    importance_sampling_error_default(
+                        lambda X: err(X), lambda X: p(X), lambda X: g_estim(X), g_test
+                    )
                 ]
 
-                #iter_err["ISE_g_estim"] += [importance_sampling_error_default(np.exp(err), np.exp(p), np.exp(g_estim))]
+                # iter_err["ISE_g_estim"] += [importance_sampling_error_default(np.exp(err), np.exp(p), np.exp(g_estim))]
 
             if "ISE_g_regular" in target_error:
                 epsilon = hyperparams["ISE_g_regular"]
-                g_estim_new = lambda X: (1 - epsilon)*np.exp(g_estim(X)) + epsilon/(conf["max_mu"]**2)
-                #if(epsilon == 0):
-                    #print("Comparing to the truth for eps = 0:")
-                    #delta = np.abs((importance_sampling_error_default(lambda X: np.exp(err(X)), lambda X: np.exp(p(X)), g_estim_new, g_test) - importance_sampling_error_default(lambda X: np.exp(err(X)), lambda X: np.exp(p(X)), lambda X: np.exp(g_estim(X)), g_test))[0])
-                    #print(f"delta_errors:{delta}")
+                g_estim_new = lambda X: (1 - epsilon) * np.exp(g_estim(X)) + epsilon / (
+                    conf["max_mu"] ** 2
+                )
+                if(epsilon == 0):
+                    logging.debug("Comparing to the truth for eps = 0:")
+                    delta = np.abs((importance_sampling_error_default(lambda X: np.exp(err(X)), lambda X: np.exp(p(X)), g_estim_new, g_test) - importance_sampling_error_default(lambda X: np.exp(err(X)), lambda X: np.exp(p(X)), lambda X: np.exp(g_estim(X)), g_test))[0])
+                    logging.debug(f"delta_errors:{delta}")
                 iter_err["ISE_g_regular"] += [
-                    importance_sampling_error_default(lambda X: np.exp(err(X)), lambda X: np.exp(p(X)), g_estim_new, g_test)
+                    importance_sampling_error_default(
+                        lambda X: np.exp(err(X)),
+                        lambda X: np.exp(p(X)),
+                        g_estim_new,
+                        g_test,
+                    )
                 ]
 
             if "ISE_g_clip" in target_error:

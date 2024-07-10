@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.special import logsumexp
 
+
 def importance_sampling_error(err, p, g, g_sample):
     """
     :param err: log-error function
@@ -9,18 +10,20 @@ def importance_sampling_error(err, p, g, g_sample):
     :param g_sample:
     :return: log-ISE
     """
-    #print(f"error IS:{logsumexp(p(g_sample) - g(g_sample) + err(g_sample))}")
+    # print(f"error IS:{logsumexp(p(g_sample) - g(g_sample) + err(g_sample))}")
     return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(
         g_sample.shape[0]
     )
 
+
 def importance_sampling_error_default(err, p, g, g_sample):
-    #from log-densities for default because of log(0.000000000001) errors
+    # from log-densities for default because of log(0.000000000001) errors
     sum = 0
     for i in range(g_sample.shape[0]):
-        sum = sum + err([g_sample[i]])*p([g_sample[i]])/g([g_sample[i]])
-        
-    return np.log(sum/g_sample.shape[0])
+        sum = sum + err([g_sample[i]]) * p([g_sample[i]]) / g([g_sample[i]])
+
+    return np.log(sum / g_sample.shape[0])
+
 
 def monte_carlo_error(err, p_sample):
     """
@@ -28,8 +31,9 @@ def monte_carlo_error(err, p_sample):
     :param p_sample:
     :return: log-MCE
     """
-    #print(f"True error Mce_p/Mce_g:{logsumexp(err(p_sample))}")
-    return logsumexp(err(p_sample)) - np.log(p_sample.shape[0])    
+    # print(f"True error Mce_p/Mce_g:{logsumexp(err(p_sample))}")
+    return logsumexp(err(p_sample)) - np.log(p_sample.shape[0])
+
 
 def clip(a, b_min, b_max):
     if a < b_min:

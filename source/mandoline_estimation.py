@@ -22,7 +22,7 @@ def mandoline_error(g_test, p_test, model, f, err, n_slices=3):
 
     est = estimate_performance(D_src, D_tgt, None, empirical_mat_list_src)
 
-    #print smth for max_cov ?
+    # print smth for max_cov ?
     return logsumexp(np.log(est.density_ratios) + err(g_test)) - np.log(g_test.shape[0])
 
 

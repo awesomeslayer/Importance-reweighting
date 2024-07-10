@@ -1,0 +1,24 @@
+conf:
+  max_mu : 5 
+  n_samples : 4000
+  n_dim : 2 
+  max_cov : 1
+  n_components : 15
+
+hyperparams_dict:
+  kde_size : [5]
+  ISE_g_regular : [0, 0.5, 1]
+  ISE_g_clip : [0, 0.5, 1]
+  ISE_g_estim_clip : [0, 0.5, 1]
+  
+params:
+  max_cov_list : [1, 5, 10, 20]
+  xs : ["MCE_g","ISE_g","ISE_g_regular","ISE_g_estim","ISE_g_clip","ISE_g_estim_clip","Mandoline",]
+  n_tests : 30
+  f : "linear"
+  model : "linear" 
+  n_splits : 1
+
+hyperparams_params:
+  n_hyp_tests : 15
+  grid_flag : True

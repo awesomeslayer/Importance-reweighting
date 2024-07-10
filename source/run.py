@@ -3,6 +3,9 @@ import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
 import matplotlib.pyplot as plt
 from tqdm import trange
+import logging
+import hydra
+
 from tests.metrics import mape, rmse, variance
 from tests.test import test
 from .simulation import (
@@ -116,16 +119,15 @@ def run_test_case(
         "ISE_g_clip": [0],
         "ISE_g_estim_clip": [0],
     },
-    FindBestParam=True,
+    grid_flag=True,
 ):
     best_hyperparams = {
         "kde_size": hyperparams_dict["kde_size"][0],
-        "ISE_g_regular": 0,
-        "ISE_g_clip": 0,
-        "ISE_g_estim_clip": 0,
+        "ISE_g_regular": hyperparams_dict["ISE_g_regular"][0],
+        "ISE_g_clip": hyperparams_dict["ISE_g_clip"][0],
+        "ISE_g_estim_clip": hyperparams_dict["ISE_g_clip"][0],
     }
-
-    if FindBestParam:
+    if grid_flag:
         x_hyp = ["ISE_g_regular", "ISE_g_estim_clip", "ISE_g_clip"]
         metrics_list_hyp, log_err_hyp_list = hyperparams_search(
             conf,
@@ -141,12 +143,15 @@ def run_test_case(
         )
         best_hyperparams, mape_dict, hyp_dict = find_best_hyp(x_hyp, metrics_list_hyp)
         extr_plots(conf, x_hyp, mape_dict, hyp_dict)
-
-        print(f"mape_dict: {mape_dict}")
-        print(f"hyperparam dict: {hyp_dict}")
-        print(f"best_hyperparams for max_cov {conf['max_cov']}:\n{best_hyperparams}")
-
-    print("TEST FOR PLOT WITH BEST HYPERPARAMS:")
+        
+        logging.debug(f"for max_cov={conf['max_cov']}:")
+        logging.debug(f"mape_dict:\n {mape_dict}")
+        logging.debug(f"hyperparam dict:\n {hyp_dict}")
+        logging.debug(f"best_hyperparams:\n{best_hyperparams}")
+    else:
+        logging.debug(f"Running with default without GridSearch hyperparams:\n{best_hyperparams}")
+    
+    logging.info("TEST FOR PLOT WITH BEST HYPERPARAMS:\n")
     log_err = test(
         conf,
         f_gen=f_gen,
@@ -165,7 +170,6 @@ def run_test_case(
         x_err = np.exp(log_err[x_temp])
         metrics_dict["mape"][x_temp] = mape(x_err, y_err)
         metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
-
     return metrics_dict
 
 
@@ -184,7 +188,7 @@ def run(
         "ISE_g_clip": [0],
         "ISE_g_estim_clip": [0],
     },
-    FindBestParam=True,
+    grid_flag=True,
 ):
 
     f_gens = {
@@ -206,5 +210,5 @@ def run(
         y=y,
         n_hyp_tests=n_hyp_tests,
         hyperparams_dict=hyperparams_dict,
-        FindBestParam=FindBestParam,
+        grid_flag = grid_flag,
     )
