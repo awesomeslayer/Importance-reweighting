@@ -1,77 +1,77 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from source.run import run
 import tqdm
+import logging
+import hydra
+from omegaconf import OmegaConf, DictConfig
+from source.run import run
+from source.simulation import visualize_GMM_config
 
-    if __name__ == "__main__":
-    conf = dict()
-    conf["max_mu"] = 100
-    conf["n_samples"] = 10000
-    conf["n_dim"] = 2
-    conf["max_cov"] = 100
-    conf["n_components"] = 30
 
-    f = "linear"  # , ['GMM']
-    model = "linear"  # ['boosting']
+@hydra.main(version_base=None, config_path='../config', config_name='config')
+def max_cov_plot(cfg: DictConfig):
+    print(OmegaConf.to_yaml(cfg))
+ 
+    y = "MCE_p" 
 
-    n_splits = 1
-    xs = [
-        "MCE_g",
-        "ISE_g",
-        "ISE_g_regular",
-        "ISE_g_estim",
-        "ISE_g_clip",
-        "ISE_g_estim_clip",
-        "Mandoline",
-    ]
-    y = "MCE_p"
-
+    hyperparams_dict =  OmegaConf.to_container(cfg['hyperparams_dict'])
+    params = OmegaConf.to_container(cfg['params'])
+    hyperparams_params = OmegaConf.to_container(cfg['hyperparams_params'])
+    conf = OmegaConf.to_container(cfg['conf'])
+   
     errors_plot = {}
-    for x in xs:
+    for x in params['xs']:
         errors_plot[x] = []
 
-    hyperparams_dict = {
-        "kde_size": [5],
-        "ISE_g_regular": np.arange(0, 0.1, 0.02),
-        "ISE_g_clip": np.arange(0, 1, 0.2),
-        "ISE_g_estim_clip": np.arange(0, 1, 0.2),
-    }
+    logging.debug(f"xs + y = {params['xs'] + [y]}")
+    logging.debug(f"f = {params['f']}, model = {params['model']}")
+    logging.debug(f"config: max_mu = {conf['max_mu']}, n_samples = {conf['n_samples']}, n_dim = {conf['n_dim']}, n_components = {conf['n_components']}, n_splits = {params['n_splits']}, kde_size = {hyperparams_dict['kde_size']}")
+    logging.debug(f"regular_list = {hyperparams_dict['ISE_g_regular']}, clip_list = {hyperparams_dict['ISE_g_clip']},\n max_cov_list = {params['max_cov_list']}")
+    logging.debug(f"n_tests = {params['n_tests']}")
+    logging.debug(f"Status FindBestParam = {hyperparams_params['grid_flag']}")
+    
+    if(hyperparams_params['grid_flag']):
+        n_hyp_tests = hyperparams_params['n_hyp_tests']
+        logging.debug(f"n_hyp_tests = {n_hyp_tests}")
 
-
-    max_cov_list = np.arange(1, 200, 5)
-    n_tests = 30
-    n_hyp_tests = 30
-
-    for max_cov in tqdm(max_cov_list):
+    for max_cov in params['max_cov_list']:
+        log.info(f"max_cov:{max_cov}")
         conf["max_cov"] = max_cov
 
         error = {}
-        for x in xs:
+        for x in params['xs']:
             error[x] = 0
 
         elem = run(
             conf,
-            f,
-            model,
-            n_splits,
-            xs,
+            params['f'],
+            params['model'],
+            params['n_splits'],
+            params['xs'],
             y,
-            n_tests=n_tests,
+            n_tests=params['n_tests'],
             n_hyp_tests=n_hyp_tests,
             hyperparams_dict=hyperparams_dict,
-            FindBestParam=True,
+            grid_flag=hyperparams_params['grid_flag'],
         )
-        for x in xs:
+
+        log.debug(f"errors for max_cov={max_cov}:\n {elem}")
+        
+        for x in params['xs']:
             error[x] += elem["mape"][x]
             errors_plot[x].append(error[x])
 
     fig, ax = plt.subplots(figsize=(12, 12))
-    for x in xs:
-        ax.plot(max_cov_list, errors_plot[x], label=f"{x}")
+    for x in params['xs']:
+        ax.plot(params['max_cov_list'], errors_plot[x], label=f"{x}")
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("errors", fontsize=26)
     # ax.set_xscale("log")
-    plt.savefig("./plots/results/max_cov.pdf")
+    # plt.savefig("./plots/results/max_cov.pdf")
     plt.tight_layout()
-    # plt.show()
+    plt.show()
+
+log = logging.getLogger(__name__)
+if __name__ == "__main__":
+    max_cov_plot()

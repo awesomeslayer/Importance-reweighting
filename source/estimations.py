@@ -10,9 +10,19 @@ def importance_sampling_error(err, p, g, g_sample):
     :param g_sample:
     :return: log-ISE
     """
+    # print(f"error IS:{logsumexp(p(g_sample) - g(g_sample) + err(g_sample))}")
     return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(
         g_sample.shape[0]
     )
+
+
+def importance_sampling_error_default(err, p, g, g_sample):
+    # from log-densities for default because of log(0.000000000001) errors
+    sum = 0
+    for i in range(g_sample.shape[0]):
+        sum = sum + err([g_sample[i]]) * p([g_sample[i]]) / g([g_sample[i]])
+
+    return np.log(sum / g_sample.shape[0])
 
 
 def monte_carlo_error(err, p_sample):
@@ -48,25 +58,3 @@ def ISE_clip(err, p, g, g_sample, eps):
         clipped_array.append(np.log(clip(np.exp(p_elem - g_elem), 1 - eps, 1 + eps)))
 
     return logsumexp(clipped_array + err(g_sample)) - np.log(g_sample.shape[0])
-
-
-def monte_carlo_error_variance(err, p_sample):
-    """
-    :param err: log-error function
-    :param p_sample
-    :return: log-expected part of variance
-    """
-    return logsumexp(2 * err(p_sample)) - np.log(p_sample.shape[0])
-
-
-def importance_sampling_error_variance(err, p, g, g_sample):
-    """
-    :param err: log-error function
-    :param p: log-probability density of target distribution
-    :param g: log-probability density of sample distribution
-    :param g_sample:
-    :return: log-expected part of variance
-    """
-    return logsumexp(2 * err(g_sample) + 2 * p(g_sample) - g(g_sample)) - np.log(
-        g_sample.shape[0]
-    )
