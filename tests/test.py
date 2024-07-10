@@ -25,7 +25,7 @@ def test(
     n_splits=1,
     target_error=None,
     hyperparams={
-        "kde_size": "scott",
+        "kde_size": [5],
         "ISE_g_regular": 0,
         "ISE_g_clip": 0,
         "ISE_g_estim_clip": 0,
@@ -64,7 +64,7 @@ def test(
         else ShuffleSplit(n_splits=1, test_size=0.3, random_state=0)
     )
 
-    for _ in trange(n_tests):
+    for _ in range(n_tests):
         iter_err = dict()
         for err in target_error:
             iter_err[err] = []
@@ -83,29 +83,29 @@ def test(
 
             err = lambda X: np.log(np.abs(f(X) - model.predict(X)))
 
-            estim_list = [
+            kde_list = [
                 "ISE_g_estim",
                 "ISE_g_regular",
                 "ISE_g_estim_clip",
                 "ISE_g_estim_variance",
                 "ISE_g_regular_variance",
             ]
-            if [i for i in target_error if i in estim_list]:
+            if [i for i in target_error if i in kde_list]:
                 kde_sk = KernelDensity(
                     kernel="gaussian", bandwidth=hyperparams["kde_size"]
                 ).fit(g_train)
                 g_estim = lambda X: kde_sk.score_samples(X)
 
             if "MCE_p" in target_error:
-                print('MCE_p')
+
                 iter_err["MCE_p"] += [monte_carlo_error(err, p_test)]
 
             if "MCE_g" in target_error:
-                print('MCE_g')
+
                 iter_err["MCE_g"] += [monte_carlo_error(err, g_test)]
 
             if "ISE_g" in target_error:
-                print('ISE_g')
+
                 iter_err["ISE_g"] += [importance_sampling_error(err, p, g, g_test)]
 
             if "ISE_g_estim" in target_error:
@@ -114,10 +114,17 @@ def test(
                 ]
 
             if "ISE_g_regular" in target_error:
-                g_estim_new = lambda X: np.log(
-                    (1 - hyperparams["ISE_g_regular"]) * np.exp(g_estim(X))
-                    + hyperparams["ISE_g_regular"] / (conf["max_mu"] ** 2)
-                )
+                epsilon = hyperparams["ISE_g_regular"]
+                if epsilon == 0:
+                    g_estim_new = g_estim
+                else:
+                    g_estim_new = (
+                        lambda X: np.log((1 - epsilon))
+                        + g_estim(X)
+                        + np.log(epsilon)
+                        - 2 * np.log(conf["max_mu"])
+                    )
+
                 iter_err["ISE_g_regular"] += [
                     importance_sampling_error(err, p, g_estim_new, g_test)
                 ]

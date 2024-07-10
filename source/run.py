@@ -2,7 +2,7 @@ from functools import partial
 import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
 import matplotlib.pyplot as plt
-
+from tqdm import trange
 from tests.metrics import mape, rmse, variance
 from tests.test import test
 from .simulation import (
@@ -15,7 +15,7 @@ from .simulation import (
 
 
 def find_best_hyp(x_hyp, metrics_list_hyp):
-    best_hyperparams = {"kde_size": "scott"}
+    best_hyperparams = {"kde_size": metrics_list_hyp[0][0]["kde_size"]}
     hyp_dict = {}
     mape_dict = {}
     for x_temp in x_hyp:
@@ -23,9 +23,14 @@ def find_best_hyp(x_hyp, metrics_list_hyp):
         mape_dict[x_temp] = []
 
     for x_temp in x_hyp:
+        error = 0
         for i in range(len(metrics_list_hyp)):
             hyp_dict[x_temp] += [metrics_list_hyp[i][0][x_temp]]
-            mape_dict[x_temp] += [metrics_list_hyp[i][1]["mape"][x_temp]]
+
+            error = metrics_list_hyp[i][1]["mape"][x_temp]
+            if np.isnan(error):
+                error = np.inf
+            mape_dict[x_temp] += [error]
 
         best_hyperparams[x_temp] = hyp_dict[x_temp][
             mape_dict[x_temp].index(min(mape_dict[x_temp]))
@@ -35,9 +40,6 @@ def find_best_hyp(x_hyp, metrics_list_hyp):
 
 
 def extr_plots(conf, x_hyp, mape_dict, hyp_dict):
-    # print(f"mape_dict\n{mape_dict}")
-    # print(f"hyp_dict\n{hyp_dict}")
-
     for x_temp in x_hyp:
         fig, ax = plt.subplots(figsize=(12, 12))
         ax.plot(hyp_dict[x_temp], mape_dict[x_temp], label=f"{x_temp}")
@@ -55,7 +57,7 @@ def hyperparams_search(
     conf, f_gen, model, g_gen, p_gen, n_hyp_tests, n_splits, x_hyp, y, hyperparams_dict
 ):
 
-    hyperparams = {"kde_size": "scott"}
+    hyperparams = {"kde_size": hyperparams_dict["kde_size"][0]}
     metrics_list_hyp = []
     size = len(hyperparams_dict["ISE_g_regular"])  #
     for x_temp in x_hyp:
@@ -63,9 +65,11 @@ def hyperparams_search(
             print("ERROR, LENGTHS OF PARAMS MUST BE SIMILAR")
             return "ERROR"
     log_err_hyp_list = []
-    for i in range(size):
 
-        hyperparams = {"kde_size": "scott"}
+    print("TEST FOR HYPERPARAMS SEARCH:")
+    for i in trange(size):
+
+        hyperparams = {"kde_size": hyperparams_dict["kde_size"][0]}
         for x_temp in x_hyp:
             hyperparams[x_temp] = hyperparams_dict[x_temp][i]
 
@@ -107,7 +111,7 @@ def run_test_case(
     y,
     n_hyp_tests=5,
     hyperparams_dict={
-        "kde_size": ["scott"],
+        "kde_size": [5],
         "ISE_g_regular": [0],
         "ISE_g_clip": [0],
         "ISE_g_estim_clip": [0],
@@ -115,7 +119,7 @@ def run_test_case(
     FindBestParam=True,
 ):
     best_hyperparams = {
-        "kde_size": "scott",
+        "kde_size": hyperparams_dict["kde_size"][0],
         "ISE_g_regular": 0,
         "ISE_g_clip": 0,
         "ISE_g_estim_clip": 0,
@@ -136,11 +140,13 @@ def run_test_case(
             hyperparams_dict,
         )
         best_hyperparams, mape_dict, hyp_dict = find_best_hyp(x_hyp, metrics_list_hyp)
-
-        print(f"best_hyperparams for max_cov {conf['max_cov']}:\n{best_hyperparams}")
-
         extr_plots(conf, x_hyp, mape_dict, hyp_dict)
 
+        print(f"mape_dict: {mape_dict}")
+        print(f"hyperparam dict: {hyp_dict}")
+        print(f"best_hyperparams for max_cov {conf['max_cov']}:\n{best_hyperparams}")
+
+    print("TEST FOR PLOT WITH BEST HYPERPARAMS:")
     log_err = test(
         conf,
         f_gen=f_gen,
@@ -173,7 +179,7 @@ def run(
     n_tests=5,
     n_hyp_tests=5,
     hyperparams_dict={
-        "kde_size": ["scott"],
+        "kde_size": [5],
         "ISE_g_regular": [0],
         "ISE_g_clip": [0],
         "ISE_g_estim_clip": [0],

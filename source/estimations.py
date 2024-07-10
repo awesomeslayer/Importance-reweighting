@@ -10,7 +10,6 @@ def importance_sampling_error(err, p, g, g_sample):
     :param g_sample:
     :return: log-ISE
     """
-    #print(f"error IS:{logsumexp(p(g_sample) - g(g_sample) + err(g_sample))}")
     return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(
         g_sample.shape[0]
     )
@@ -22,7 +21,7 @@ def monte_carlo_error(err, p_sample):
     :param p_sample:
     :return: log-MCE
     """
-    #print(f"True error Mce_p/Mce_g:{logsumexp(err(p_sample))}")
+    # print(f"True error Mce_p/Mce_g:{logsumexp(err(p_sample))}")
     return logsumexp(err(p_sample)) - np.log(p_sample.shape[0])
 
 
