@@ -23,20 +23,20 @@ def max_cov_plot(cfg: DictConfig):
     for x in params["xs"]:
         errors_plot[x] = []
 
-    logging.debug(f"xs + y = {params['xs'] + [y]}")
-    logging.debug(f"f = {params['f']}, model = {params['model']}")
-    logging.debug(
+    logging.info(f"xs + y = {params['xs'] + [y]}")
+    logging.info(f"f = {params['f']}, model = {params['model']}")
+    logging.info(
         f"config: max_mu = {conf['max_mu']}, n_samples = {conf['n_samples']}, n_dim = {conf['n_dim']}, n_components = {conf['n_components']}, n_splits = {params['n_splits']}, kde_size = {hyperparams_dict['kde_size']}"
     )
-    logging.debug(
-        f"regular_list = {hyperparams_dict['ISE_g_regular']}, clip_list = {hyperparams_dict['ISE_g_clip']},\n max_cov_list = {params['max_cov_list']}"
+    logging.info(
+        f"slices_list = {hyperparams_dict['Mandoline']}, regular_list = {hyperparams_dict['ISE_g_regular']}, clip_list = {hyperparams_dict['ISE_g_clip']},\n max_cov_list = {params['max_cov_list']}"
     )
-    logging.debug(f"n_tests = {params['n_tests']}")
-    logging.debug(f"Status FindBestParam = {hyperparams_params['grid_flag']}")
+    logging.info(f"n_tests = {params['n_tests']}")
+    logging.info(f"Status FindBestParam = {hyperparams_params['grid_flag']}")
 
     if hyperparams_params["grid_flag"]:
         n_hyp_tests = hyperparams_params["n_hyp_tests"]
-        logging.debug(f"n_hyp_tests = {n_hyp_tests}")
+        logging.info(f"n_hyp_tests = {n_hyp_tests}")
 
     for max_cov in params["max_cov_list"]:
         log.info(f"max_cov:{max_cov}")
@@ -59,7 +59,7 @@ def max_cov_plot(cfg: DictConfig):
             grid_flag=hyperparams_params["grid_flag"],
         )
 
-        log.debug(f"errors for max_cov={max_cov}:\n {elem}")
+        log.info(f"errors for max_cov={max_cov}:\n {elem}")
 
         for x in params["xs"]:
             error[x] += elem["mape"][x]
@@ -72,9 +72,9 @@ def max_cov_plot(cfg: DictConfig):
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("errors", fontsize=26)
     # ax.set_xscale("log")
-    # plt.savefig("./plots/results/max_cov.pdf")
+    plt.savefig("./plots/results/max_cov.pdf")
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
 
 log = logging.getLogger(__name__)

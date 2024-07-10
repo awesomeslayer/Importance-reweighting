@@ -132,4 +132,4 @@ def visualize_GMM_config(config, alpha):
 
     ax.set_xlim((0, config["max_mu"]))
     ax.set_ylim((0, config["max_mu"]))
-    plt.savefig("sample.pdf")
+    plt.show()

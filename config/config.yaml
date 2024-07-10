@@ -6,7 +6,8 @@ conf:
   n_components : 15
 
 hyperparams_dict:
-  kde_size : [5]
+  kde_size : ['scott']
+  Mandoline : [2, 3, 7, 15]
   ISE_g_regular : [0, 0.5, 1]
   ISE_g_clip : [0, 0.5, 1]
   ISE_g_estim_clip : [0, 0.5, 1]
@@ -14,11 +15,11 @@ hyperparams_dict:
 params:
   max_cov_list : [1, 5, 10, 20]
   xs : ["MCE_g","ISE_g","ISE_g_regular","ISE_g_estim","ISE_g_clip","ISE_g_estim_clip","Mandoline",]
-  n_tests : 30
+  n_tests : 3
   f : "linear"
   model : "linear" 
   n_splits : 1
 
 hyperparams_params:
-  n_hyp_tests : 15
+  n_hyp_tests : 3
   grid_flag : True
