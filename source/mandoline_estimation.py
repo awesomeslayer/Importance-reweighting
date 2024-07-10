@@ -5,11 +5,11 @@ from sklearn.cluster import KMeans
 from scipy.special import logsumexp
 from sklearn.model_selection import KFold, ShuffleSplit
 from tqdm import trange
-
 from mandoline_src.mandoline import estimate_performance
 
 
 def mandoline_error(g_test, p_test, model, f, err, n_slices=3):
+    # for prediction-based slices:
     # D_src = slice_prediction(g_test, model, n_slices=n_slices)
     # D_tgt = slice_prediction(
     #    p_test, model, n_slices=n_slices
@@ -18,19 +18,11 @@ def mandoline_error(g_test, p_test, model, f, err, n_slices=3):
     D_src = slice_clusterisation(g_test, n_slices=3)
     D_tgt = slice_clusterisation(p_test, n_slices=3)
 
-    # print(D_src)
     empirical_mat_list_src = [get_correct(model, g_test, f(g_test))]
 
-    return logsumexp(
-        np.log(
-            estimate_performance(
-                D_src, D_tgt, np.array([(0, 1), (1, 2), (0, 2)]), empirical_mat_list_src
-            ).density_ratios
-        )
-        + err(g_test)
-    ) - np.log(
-        g_test.shape[0]
-    )  # logsumexp(err(g_test) + log_weights) - np.log(g_test.shape[0])
+    est = estimate_performance(D_src, D_tgt, None, empirical_mat_list_src)
+
+    return logsumexp(np.log(est.density_ratios) + err(g_test)) - np.log(g_test.shape[0])
 
 
 def get_correct(model, X, labels, tolerance=1e-5):
@@ -64,7 +56,6 @@ def slice_prediction(X, model, n_slices=2):
 
 
 def slice_clusterisation(X, n_slices=3):
-    # visualize_GMM_config(config, alpha):
     kmeans = KMeans(n_clusters=n_slices, n_init="auto")
     kmeans.fit(X)
     D = np.zeros((len(X), n_slices))
