@@ -3,13 +3,15 @@ import matplotlib.pyplot as plt
 from source.run import run
 import tqdm
 
-    if __name__ == "__main__":
+if __name__ == "__main__":
     conf = dict()
-    conf["max_mu"] = 100
-    conf["n_samples"] = 10000
+    conf["max_mu"] = 50
+    conf["n_samples"] = 4000 #10000
     conf["n_dim"] = 2
-    conf["max_cov"] = 100
-    conf["n_components"] = 30
+    conf["max_cov"] = 1
+    conf["n_components"] = 15
+
+    visualize_GMM_config(config = conf, alpha = 0.1)
 
     f = "linear"  # , ['GMM']
     model = "linear"  # ['boosting']
@@ -32,15 +34,15 @@ import tqdm
 
     hyperparams_dict = {
         "kde_size": [5],
-        "ISE_g_regular": np.arange(0, 0.1, 0.02),
-        "ISE_g_clip": np.arange(0, 1, 0.2),
-        "ISE_g_estim_clip": np.arange(0, 1, 0.2),
+        "ISE_g_regular": np.arange(0, 1, 0.025),
+        "ISE_g_clip": np.arange(0, 1, 0.025),
+        "ISE_g_estim_clip": np.arange(0, 1, 0.025),
     }
 
 
-    max_cov_list = np.arange(1, 200, 5)
+    max_cov_list = np.arange(1, 200, 10)
     n_tests = 30
-    n_hyp_tests = 30
+    n_hyp_tests = 10
 
     for max_cov in tqdm(max_cov_list):
         conf["max_cov"] = max_cov
@@ -71,7 +73,7 @@ import tqdm
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("errors", fontsize=26)
-    # ax.set_xscale("log")
-    plt.savefig("./plots/results/max_cov.pdf")
+    #ax.set_xscale("log")
+    #plt.savefig("./plots/results/max_cov.pdf")
     plt.tight_layout()
-    # plt.show()
+    plt.show()
