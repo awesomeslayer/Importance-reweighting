@@ -143,14 +143,16 @@ def run_test_case(
         )
         best_hyperparams, mape_dict, hyp_dict = find_best_hyp(x_hyp, metrics_list_hyp)
         extr_plots(conf, x_hyp, mape_dict, hyp_dict)
-        
+
         logging.debug(f"for max_cov={conf['max_cov']}:")
         logging.debug(f"mape_dict:\n {mape_dict}")
         logging.debug(f"hyperparam dict:\n {hyp_dict}")
         logging.debug(f"best_hyperparams:\n{best_hyperparams}")
     else:
-        logging.debug(f"Running with default without GridSearch hyperparams:\n{best_hyperparams}")
-    
+        logging.debug(
+            f"Running with default without GridSearch hyperparams:\n{best_hyperparams}"
+        )
+
     logging.info("TEST FOR PLOT WITH BEST HYPERPARAMS:\n")
     log_err = test(
         conf,
@@ -210,5 +212,5 @@ def run(
         y=y,
         n_hyp_tests=n_hyp_tests,
         hyperparams_dict=hyperparams_dict,
-        grid_flag = grid_flag,
+        grid_flag=grid_flag,
     )

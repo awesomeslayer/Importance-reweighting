@@ -124,9 +124,24 @@ def test(
                 g_estim_new = lambda X: (1 - epsilon) * np.exp(g_estim(X)) + epsilon / (
                     conf["max_mu"] ** 2
                 )
-                if(epsilon == 0):
+                if epsilon == 0:
                     logging.debug("Comparing to the truth for eps = 0:")
-                    delta = np.abs((importance_sampling_error_default(lambda X: np.exp(err(X)), lambda X: np.exp(p(X)), g_estim_new, g_test) - importance_sampling_error_default(lambda X: np.exp(err(X)), lambda X: np.exp(p(X)), lambda X: np.exp(g_estim(X)), g_test))[0])
+                    delta = np.abs(
+                        (
+                            importance_sampling_error_default(
+                                lambda X: np.exp(err(X)),
+                                lambda X: np.exp(p(X)),
+                                g_estim_new,
+                                g_test,
+                            )
+                            - importance_sampling_error_default(
+                                lambda X: np.exp(err(X)),
+                                lambda X: np.exp(p(X)),
+                                lambda X: np.exp(g_estim(X)),
+                                g_test,
+                            )
+                        )[0]
+                    )
                     logging.debug(f"delta_errors:{delta}")
                 iter_err["ISE_g_regular"] += [
                     importance_sampling_error_default(
