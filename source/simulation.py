@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.linalg import cholesky, solve_triangular
 from sklearn.mixture import GaussianMixture
+import GPy
 
 np.seterr(divide="ignore")
 np.random.seed(42)
@@ -102,6 +103,23 @@ def random_uniform_samples(config, fixed_region: bool = False):
     )
 
     return w_a * a + w_b * b, log_density
+
+
+def random_GP_func(config):
+    u_config = config
+    u_config["n_samples"] = config["n_components"]
+
+    X = random_uniform_samples(u_config)[0]
+    Y = np.random.randn(config["n_components"], 1)
+
+    # print(f"X:{X}")
+    # print(f"Y:{Y}")
+    kernel = GPy.kern.RBF(input_dim=2, variance=1.0, lengthscale=1.0)
+    model = GPy.models.GPRegression(X, Y, kernel, noise_var=1e-10)
+    fun = lambda X: model.posterior_samples_f(X, full_cov=True, size=1)
+
+    # heatplot(fun)
+    return fun
 
 
 def random_linear_func(config):

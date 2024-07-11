@@ -19,9 +19,9 @@ def mandoline_error(g_test, p_test, model, f, err, n_slices=3):
 
     D_src = slice_clusterisation(g_test, kmeans, n_slices=n_slices)
     D_tgt = slice_clusterisation(p_test, kmeans, n_slices=n_slices)
-    
-     # Run the solver
-    solved = mandoline(D_src, D_tgt, edge_list = None, sigma = 1)
+
+    # Run the solver
+    solved = mandoline(D_src, D_tgt, edge_list=None, sigma=1)
 
     # Compute the weights on the source dataset
     density_ratios = np.e ** log_density_ratio(solved.Phi_D_src, solved)

@@ -43,10 +43,12 @@ def clip(a, b_min, b_max):
     else:
         return a
 
-def smooth_clip(x, eps):
-    return((1+eps)/(1 + (2*eps/(1-eps))*np.exp(-x)))
 
-def ISE_clip(err, p, g, g_sample, eps, smooth_flag = True):
+def smooth_clip(x, eps):
+    return (1 + eps) / (1 + (2 * eps / (1 - eps)) * np.exp(-x))
+
+
+def ISE_clip(err, p, g, g_sample, eps, smooth_flag=True):
     """
     :param err: log-error function
     :param p: log-probability density of target distribution
@@ -61,6 +63,8 @@ def ISE_clip(err, p, g, g_sample, eps, smooth_flag = True):
             clipped_array.append(np.log(smooth_clip(np.exp(p_elem - g_elem), eps)))
     else:
         for p_elem, g_elem in zip(p(g_sample), g(g_sample)):
-                clipped_array.append(np.log(clip(np.exp(p_elem - g_elem), 1-eps, 1+eps)))
-        
+            clipped_array.append(
+                np.log(clip(np.exp(p_elem - g_elem), 1 - eps, 1 + eps))
+            )
+
     return logsumexp(clipped_array + err(g_sample)) - np.log(g_sample.shape[0])

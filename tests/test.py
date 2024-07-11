@@ -5,7 +5,8 @@ from scipy.special import logsumexp
 from sklearn.neighbors import KernelDensity
 from sklearn.model_selection import KFold, ShuffleSplit
 from tqdm import trange
-#from scipy.stats import gaussian_kde
+
+# from scipy.stats import gaussian_kde
 
 from source.estimations import (
     importance_sampling_error,
@@ -58,26 +59,26 @@ def test(
         CV_err[err] = []
 
     kf = (
-        KFold(n_splits=params['n_splits'])
-        if params['n_splits'] > 1
+        KFold(n_splits=params["n_splits"])
+        if params["n_splits"] > 1
         else ShuffleSplit(n_splits=1, test_size=0.3, random_state=0)
     )
 
-    for _ in trange(params['n_tests']):
+    for _ in trange(params["n_tests"]):
         iter_err = dict()
         for err in target_error:
             iter_err[err] = []
 
-        f = params['f_gen']()
-        g_sample, g = params['g_gen']()
-        p_sample, p = params['p_gen']()
-        for (train_idx, test_idx) in kf.split(g_sample):
+        f = params["f_gen"]()
+        g_sample, g = params["g_gen"]()
+        p_sample, p = params["p_gen"]()
+        for train_idx, test_idx in kf.split(g_sample):
 
             g_train = g_sample[train_idx]
             g_test = g_sample[test_idx]
             p_test = p_sample[test_idx]
 
-            model = params['model_gen']
+            model = params["model_gen"]
             model.fit(g_train, f(g_train))
 
             err = lambda X: np.log(np.abs(f(X) - model.predict(X)))
@@ -152,12 +153,26 @@ def test(
 
             if "ISE_g_clip" in target_error:
                 iter_err["ISE_g_clip"] += [
-                    ISE_clip(err, p, g, g_test, hyperparams["ISE_g_clip"], smooth_flag=hyperparam_params['smooth_flag'])
+                    ISE_clip(
+                        err,
+                        p,
+                        g,
+                        g_test,
+                        hyperparams["ISE_g_clip"],
+                        smooth_flag=hyperparam_params["smooth_flag"],
+                    )
                 ]
 
             if "ISE_g_estim_clip" in target_error:
                 iter_err["ISE_g_estim_clip"] += [
-                    ISE_clip(err, p, g_estim, g_test, hyperparams["ISE_g_estim_clip"], smooth_flag=hyperparam_params['smooth_flag'])
+                    ISE_clip(
+                        err,
+                        p,
+                        g_estim,
+                        g_test,
+                        hyperparams["ISE_g_estim_clip"],
+                        smooth_flag=hyperparam_params["smooth_flag"],
+                    )
                 ]
 
             if "Mandoline" in target_error:
@@ -168,6 +183,6 @@ def test(
                 ]
 
         for err in target_error:
-            CV_err[err] += [logsumexp(iter_err[err]) - np.log(params['n_splits'])]
+            CV_err[err] += [logsumexp(iter_err[err]) - np.log(params["n_splits"])]
 
     return CV_err
