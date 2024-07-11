@@ -106,9 +106,12 @@ def mandoline(
     kernel = partial(skmetrics.rbf_kernel, gamma=sigma)
 
     def llkliep_f(x):
+        #print(Phi_D_tgt)
+        #changed newaxis
+        #print(x[np.newaxis, :])
         obj = kernel(
-            Phi_D_tgt, x[:, np.newaxis]
-        ).sum() - n_tgt * scipy.special.logsumexp(kernel(Phi_D_src, x[:, np.newaxis]))
+            Phi_D_tgt, x[np.newaxis,:]
+        ).sum() - n_tgt * scipy.special.logsumexp(kernel(Phi_D_src, x[np.newaxis, :]))
         return -obj
 
     # Solve
