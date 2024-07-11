@@ -10,11 +10,11 @@ from source.simulation import visualize_GMM_config
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
 def max_cov_plot(cfg: DictConfig):
-    print(OmegaConf.to_yaml(cfg))
-
-    y = "MCE_p"
-
     hyperparams_dict = OmegaConf.to_container(cfg["hyperparams_dict"])
+    hyperparams_dict['Mandoline'] = np.arange(1, 20, 1)
+    hyperparams_dict['ISE_g_regular'] = np.arange(0, 0.2, 0.01)
+    hyperparams_dict['ISE_g_clip'] = np.arange(0, 1, 0.05)
+    hyperparams_dict['ISE_g_estim_clip'] = np.arange(0, 1, 0.05)
     params = OmegaConf.to_container(cfg["params"])
     hyperparams_params = OmegaConf.to_container(cfg["hyperparams_params"])
     conf = OmegaConf.to_container(cfg["conf"])
@@ -23,20 +23,19 @@ def max_cov_plot(cfg: DictConfig):
     for x in params["xs"]:
         errors_plot[x] = []
 
-    logging.info(f"xs + y = {params['xs'] + [y]}")
+    logging.info(f"xs + y = {params['xs'] + params['y']}")
     logging.info(f"f = {params['f']}, model = {params['model']}")
     logging.info(
         f"config: max_mu = {conf['max_mu']}, n_samples = {conf['n_samples']}, n_dim = {conf['n_dim']}, n_components = {conf['n_components']}, n_splits = {params['n_splits']}, kde_size = {hyperparams_dict['kde_size']}"
     )
     logging.info(
-        f"slices_list = {hyperparams_dict['Mandoline']}, regular_list = {hyperparams_dict['ISE_g_regular']}, clip_list = {hyperparams_dict['ISE_g_clip']},\n max_cov_list = {params['max_cov_list']}"
+        f"slices_list = {hyperparams_dict['Mandoline']},\n regular_list = {hyperparams_dict['ISE_g_regular']},\n clip_list = {hyperparams_dict['ISE_g_clip']},\n max_cov_list = {params['max_cov_list']}"
     )
     logging.info(f"n_tests = {params['n_tests']}")
-    logging.info(f"Status FindBestParam = {hyperparams_params['grid_flag']}")
+    logging.info(f"Status FindBestParam = {hyperparams_params['grid_flag']}, smooth clipping = {hyperparams_params['smooth_flag']}")
 
     if hyperparams_params["grid_flag"]:
-        n_hyp_tests = hyperparams_params["n_hyp_tests"]
-        logging.info(f"n_hyp_tests = {n_hyp_tests}")
+        logging.info(f"n_hyp_tests = {hyperparams_params['n_hyp_tests']}")
 
     for max_cov in params["max_cov_list"]:
         log.info(f"max_cov:{max_cov}")
@@ -48,15 +47,9 @@ def max_cov_plot(cfg: DictConfig):
 
         elem = run(
             conf,
-            params["f"],
-            params["model"],
-            params["n_splits"],
-            params["xs"],
-            y,
-            n_tests=params["n_tests"],
-            n_hyp_tests=n_hyp_tests,
-            hyperparams_dict=hyperparams_dict,
-            grid_flag=hyperparams_params["grid_flag"],
+            params,
+            hyperparams_params,
+            hyperparams_dict,
         )
 
         log.info(f"errors for max_cov={max_cov}:\n {elem}")
@@ -76,6 +69,27 @@ def max_cov_plot(cfg: DictConfig):
     plt.tight_layout()
     # plt.show()
 
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for x in ['MCE_g', 'ISE_g_estim', 'ISE_g_regular', 'ISE_g_estim_clip', 'Mandoline']:
+        ax.plot(params["max_cov_list"], errors_plot[x], label=f"{x}")
+    plt.legend(fontsize=26)
+    ax.set_xlabel("max_cov", fontsize=26)
+    ax.set_ylabel("errors", fontsize=26)
+    # ax.set_xscale("log")  
+    plt.savefig("./plots/results/max_cov_estim.pdf")
+    plt.tight_layout()
+    # plt.show()
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for x in ['MCE_g', 'ISE_g', 'ISE_g_clip', 'Mandoline']:
+        ax.plot(params["max_cov_list"], errors_plot[x], label=f"{x}")
+    plt.legend(fontsize=26)
+    ax.set_xlabel("max_cov", fontsize=26)
+    ax.set_ylabel("errors", fontsize=26)
+    # ax.set_xscale("log")
+    plt.savefig("./plots/results/max_cov_no_estim.pdf")
+    plt.tight_layout()
+    # plt.show()
 
 log = logging.getLogger(__name__)
 if __name__ == "__main__":

@@ -15,6 +15,135 @@ from .simulation import (
     DummyModel,
 )
 
+def run(
+    conf,
+    params,
+    hyperparams_params,
+    hyperparams_dict={
+        "kde_size": [5],
+        "n_slices": [3],
+        "ISE_g_regular": [0],
+        "ISE_g_clip": [0],
+        "ISE_g_estim_clip": [0],
+    },
+):
+    f_gens = {
+        "linear": partial(random_linear_func, conf),
+        "GMM": partial(random_gaussian_mixture_func, conf),
+    }
+
+    models = {"linear": DummyModel(), "boosting": GradientBoostingRegressor()}
+
+    params['f_gen'] = f_gens[params['f']]
+    params['model_gen'] = models[params['model']]
+    params['g_gen'] = partial(random_GMM_samples, conf)
+    params['p_gen'] = partial(random_uniform_samples, conf, True)
+            
+    best_hyperparams = {
+        "kde_size": hyperparams_dict["kde_size"][0],
+        "n_slices": hyperparams_dict["Mandoline"][0],
+        "ISE_g_regular": hyperparams_dict["ISE_g_regular"][0],
+        "ISE_g_clip": hyperparams_dict["ISE_g_clip"][0],
+        "ISE_g_estim_clip": hyperparams_dict["ISE_g_clip"][0],
+    }
+
+    if hyperparams_params['grid_flag']:
+        x_hyp = ["ISE_g_regular", "ISE_g_estim_clip", "ISE_g_clip", "Mandoline"]
+        metrics_list_hyp, sizes = hyperparams_search(
+            conf,
+            params,
+            hyperparams_params,
+            hyperparams_dict,
+            x_hyp
+        )
+        best_hyperparams, mape_dict, hyp_dict = find_best_hyp(
+            x_hyp, metrics_list_hyp, sizes
+        )
+        extr_plots(conf, x_hyp, mape_dict, hyp_dict)
+
+        logging.info(f"for max_cov={conf['max_cov']}:")
+        logging.info(f"mape_dict:\n {mape_dict}")
+        logging.info(f"hyperparam dict:\n {hyp_dict}")
+        logging.info(f"best_hyperparams:\n{best_hyperparams}")
+    else:
+        logging.info(
+            f"Running with default without GridSearch hyperparams:\n{best_hyperparams}"
+        )
+
+    logging.info("TEST FOR PLOT WITH BEST HYPERPARAMS:\n")
+    log_err = test(
+        conf,
+        params,
+        hyperparams_params,
+        target_error=params['xs'] + params['y'],
+        hyperparams=best_hyperparams,
+    )
+
+    metrics_dict = {"mape": {}, "rmse": {}}
+    y_err = np.exp(log_err[params['y'][0]])
+    for x_temp in params['xs']:
+        x_err = np.exp(log_err[x_temp])
+        metrics_dict["mape"][x_temp] = mape(x_err, y_err)
+        metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
+    return metrics_dict
+
+def hyperparams_search(
+   conf, params, hyperparams_params, hyperparams_dict, x_hyp):
+    params['n_tests'] = hyperparams_params['n_hyp_tests']
+    hyperparams = {"kde_size": hyperparams_dict["kde_size"][0]}
+    metrics_list_hyp = []
+
+    sizes = dict()
+    max_size = 0
+    for x_temp in x_hyp:
+        sizes[x_temp] = len(hyperparams_dict[x_temp])
+        if len(hyperparams_dict[x_temp]) > max_size:
+            max_size = len(hyperparams_dict[x_temp])
+
+    print("TEST FOR HYPERPARAMS SEARCH:")
+    log_err_hyp_list = []
+    for i in trange(max_size):
+        hyperparams = {"kde_size": hyperparams_dict["kde_size"][0]}
+        x_hyp_temp = []
+        for x_temp in x_hyp:
+            if i < sizes[x_temp]:
+                hyperparams[x_temp] = hyperparams_dict[x_temp][i]
+                x_hyp_temp += [x_temp]
+
+        log_err_hyp_list += [
+            test(
+                conf,
+                params,
+                hyperparams_params,
+                target_error=x_hyp_temp + params['y'],
+                hyperparams=hyperparams,
+            )
+        ]
+
+        metrics_dict = {"mape": {}, "rmse": {}}
+
+        y_err = np.exp(log_err_hyp_list[i][params['y'][0]])
+        for x_temp in x_hyp_temp:
+            x_err = np.exp(log_err_hyp_list[i][x_temp])
+            metrics_dict["mape"][x_temp] = mape(x_err, y_err)
+            metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
+
+        metrics_list_hyp += [(hyperparams, metrics_dict)]
+
+    return metrics_list_hyp, sizes
+
+def extr_plots(conf, x_hyp, mape_dict, hyp_dict):
+    for x_temp in x_hyp:
+        fig, ax = plt.subplots(figsize=(12, 12))
+        ax.plot(hyp_dict[x_temp], mape_dict[x_temp], label=f"{x_temp}")
+        plt.legend(fontsize=26)
+        plt.title(f"max_cov{conf['max_cov']}")
+        ax.set_xlabel(f"param for {x_temp}", fontsize=26)
+        ax.set_ylabel("mape", fontsize=26)
+        # ax.set_xscale('log')
+        plt.savefig(f"./plots/results/{x_temp}_{conf['max_cov']}.pdf")
+        plt.tight_layout()
+        # plt.show()
 
 def find_best_hyp(x_hyp, metrics_list_hyp, sizes):
     best_hyperparams = {"kde_size": metrics_list_hyp[0][0]["kde_size"]}
@@ -41,185 +170,3 @@ def find_best_hyp(x_hyp, metrics_list_hyp, sizes):
 
     return best_hyperparams, mape_dict, hyp_dict
 
-
-def extr_plots(conf, x_hyp, mape_dict, hyp_dict):
-    for x_temp in x_hyp:
-        fig, ax = plt.subplots(figsize=(12, 12))
-        ax.plot(hyp_dict[x_temp], mape_dict[x_temp], label=f"{x_temp}")
-        plt.legend(fontsize=26)
-        plt.title(f"max_cov{conf['max_cov']}")
-        ax.set_xlabel(f"param for {x_temp}", fontsize=26)
-        ax.set_ylabel("mape", fontsize=26)
-        # ax.set_xscale('log')
-        plt.savefig(f"./plots/results/{x_temp}_{conf['max_cov']}.pdf")
-        plt.tight_layout()
-        # plt.show()
-
-
-def hyperparams_search(
-    conf, f_gen, model, g_gen, p_gen, n_hyp_tests, n_splits, x_hyp, y, hyperparams_dict
-):
-
-    hyperparams = {"kde_size": hyperparams_dict["kde_size"][0]}
-    metrics_list_hyp = []
-    sizes = dict()
-    max_size = 0
-    for x_temp in x_hyp:
-        sizes[x_temp] = len(hyperparams_dict[x_temp])
-        if len(hyperparams_dict[x_temp]) > max_size:
-            max_size = len(hyperparams_dict[x_temp])
-
-    print("TEST FOR HYPERPARAMS SEARCH:")
-    log_err_hyp_list = []
-    for i in trange(max_size):
-        hyperparams = {"kde_size": hyperparams_dict["kde_size"][0]}
-        x_hyp_temp = []
-        for x_temp in x_hyp:
-            if i < sizes[x_temp]:
-                hyperparams[x_temp] = hyperparams_dict[x_temp][i]
-                x_hyp_temp += [x_temp]
-
-        log_err_hyp_list += [
-            test(
-                conf,
-                f_gen=f_gen,
-                model=model,
-                g_gen=g_gen,
-                p_gen=p_gen,
-                n_tests=n_hyp_tests,
-                n_splits=n_splits,
-                target_error=x_hyp_temp + [y],
-                hyperparams=hyperparams,
-            )
-        ]
-
-        metrics_dict = {"mape": {}, "rmse": {}}
-
-        y_err = np.exp(log_err_hyp_list[i][y])
-        for x_temp in x_hyp_temp:
-            x_err = np.exp(log_err_hyp_list[i][x_temp])
-            metrics_dict["mape"][x_temp] = mape(x_err, y_err)
-            metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
-
-        metrics_list_hyp += [(hyperparams, metrics_dict)]
-
-    return metrics_list_hyp, sizes
-
-
-def run_test_case(
-    conf,
-    f_gen,
-    model,
-    g_gen,
-    p_gen,
-    n_tests,
-    n_splits,
-    x,
-    y,
-    n_hyp_tests=5,
-    hyperparams_dict={
-        "kde_size": [5],
-        "Mandoline": [3],
-        "ISE_g_regular": [0],
-        "ISE_g_clip": [0],
-        "ISE_g_estim_clip": [0],
-    },
-    grid_flag=True,
-):
-    best_hyperparams = {
-        "kde_size": hyperparams_dict["kde_size"][0],
-        "n_slices": hyperparams_dict["Mandoline"][0],
-        "ISE_g_regular": hyperparams_dict["ISE_g_regular"][0],
-        "ISE_g_clip": hyperparams_dict["ISE_g_clip"][0],
-        "ISE_g_estim_clip": hyperparams_dict["ISE_g_clip"][0],
-    }
-    if grid_flag:
-        x_hyp = ["ISE_g_regular", "ISE_g_estim_clip", "ISE_g_clip", "Mandoline"]
-        metrics_list_hyp, sizes = hyperparams_search(
-            conf,
-            f_gen,
-            model,
-            g_gen,
-            p_gen,
-            n_hyp_tests,
-            n_splits,
-            x_hyp,
-            y,
-            hyperparams_dict,
-        )
-        best_hyperparams, mape_dict, hyp_dict = find_best_hyp(
-            x_hyp, metrics_list_hyp, sizes
-        )
-        extr_plots(conf, x_hyp, mape_dict, hyp_dict)
-
-        logging.info(f"for max_cov={conf['max_cov']}:")
-        logging.info(f"mape_dict:\n {mape_dict}")
-        logging.info(f"hyperparam dict:\n {hyp_dict}")
-        logging.info(f"best_hyperparams:\n{best_hyperparams}")
-    else:
-        logging.info(
-            f"Running with default without GridSearch hyperparams:\n{best_hyperparams}"
-        )
-
-    logging.info("TEST FOR PLOT WITH BEST HYPERPARAMS:\n")
-    log_err = test(
-        conf,
-        f_gen=f_gen,
-        model=model,
-        g_gen=g_gen,
-        p_gen=p_gen,
-        n_tests=n_tests,
-        n_splits=n_splits,
-        target_error=x + [y],
-        hyperparams=best_hyperparams,
-    )
-
-    metrics_dict = {"mape": {}, "rmse": {}}
-    y_err = np.exp(log_err[y])
-    for x_temp in x:
-        x_err = np.exp(log_err[x_temp])
-        metrics_dict["mape"][x_temp] = mape(x_err, y_err)
-        metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
-    return metrics_dict
-
-
-def run(
-    conf,
-    f,
-    model,
-    n_splits,
-    x,
-    y,
-    n_tests=5,
-    n_hyp_tests=5,
-    hyperparams_dict={
-        "kde_size": [5],
-        "n_slices": [3],
-        "ISE_g_regular": [0],
-        "ISE_g_clip": [0],
-        "ISE_g_estim_clip": [0],
-    },
-    grid_flag=True,
-):
-
-    f_gens = {
-        "linear": partial(random_linear_func, conf),
-        "GMM": partial(random_gaussian_mixture_func, conf),
-    }
-
-    models = {"linear": DummyModel(), "boosting": GradientBoostingRegressor()}
-
-    return run_test_case(
-        conf,
-        f_gen=f_gens[f],
-        model=models[model],
-        g_gen=partial(random_GMM_samples, conf),
-        p_gen=partial(random_uniform_samples, conf, True),
-        n_tests=n_tests,
-        n_splits=n_splits,
-        x=x,
-        y=y,
-        n_hyp_tests=n_hyp_tests,
-        hyperparams_dict=hyperparams_dict,
-        grid_flag=grid_flag,
-    )
