@@ -107,20 +107,22 @@ def random_uniform_samples(config, fixed_region: bool = False):
 
 def random_GP_func(config):
     u_config = config
-    u_config['n_samples'] = config['n_components']
-    
+    u_config["n_samples"] = config["n_components"]
+
     X = random_uniform_samples(u_config)[0]
     Y = np.random.randn(config["n_components"], 1)
-  
-    kernel = GPy.kern.RBF(input_dim=2, variance=1., lengthscale=1.)
+
+    kernel = GPy.kern.RBF(input_dim=2, variance=1.0, lengthscale=1.0)
     model = GPy.models.GPRegression(X, Y, kernel, noise_var=1e-10)
 
     fun = lambda X: model.posterior_samples_f(X, full_cov=True, size=1)
-    
-    heatmap(config, fun, n_points = 50)    
+
+    # heatmap(config, fun, n_points = 50)
+
     return fun
 
-def heatmap(config, fun, n_points = 50):
+
+def heatmap(config, fun, n_points=50):
     x_range = np.linspace(0, config["max_mu"], 50)
     y_range = np.linspace(0, config["max_mu"], 50)
     xx, yy = np.meshgrid(x_range, y_range)
@@ -131,14 +133,14 @@ def heatmap(config, fun, n_points = 50):
 
     # Plotting the results
     plt.figure(figsize=(10, 6))
-    plt.contourf(xx, yy, predicted_values, levels=20, cmap='viridis')
-    plt.colorbar(label='Prediction')
-    plt.title('Gaussian Process Prediction')
+    plt.contourf(xx, yy, predicted_values, levels=20, cmap="viridis")
+    plt.colorbar(label="Prediction")
+    plt.title("Gaussian Process Prediction")
     plt.savefig("./plots/results/GP.pdf")
-    plt.xlabel('X1')
-    plt.ylabel('X2')
-    #plt.show()    
-    
+    plt.xlabel("X1")
+    plt.ylabel("X2")
+    # plt.show()
+
 
 def random_linear_func(config):
     """

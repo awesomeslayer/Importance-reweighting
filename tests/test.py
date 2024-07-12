@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 import logging
 from scipy.special import logsumexp
 from sklearn.neighbors import KernelDensity
-from sklearn.model_selection import KFold, ShuffleSplit
-from tqdm import trange
 
 # from scipy.stats import gaussian_kde
 
@@ -21,7 +19,9 @@ from source.mandoline_estimation import mandoline_error
 def test(
     conf,
     params,
-    hyperparam_params,
+    hyperparams_params,
+    gen_params,
+    kf,
     target_error=None,
     hyperparams={
         "kde_size": 5,
@@ -31,7 +31,6 @@ def test(
         "ISE_g_estim_clip": 0,
     },
 ):
-
     estimation_list = [
         "MCE_p",
         "MCE_g",
@@ -54,135 +53,131 @@ def test(
             print(err)
             raise KeyError
 
+    f = gen_params["f"]
+    g_sample = gen_params["g_sample"]
+    g = gen_params["g"]
+    p_sample = gen_params["p_sample"]
+    p = gen_params["p"]
+
     CV_err = dict()
     for err in target_error:
-        CV_err[err] = []
+        CV_err[err] = 0
 
-    kf = (
-        KFold(n_splits=params["n_splits"])
-        if params["n_splits"] > 1
-        else ShuffleSplit(n_splits=1, test_size=0.3, random_state=0)
-    )
+    iter_err = dict()
+    for err in target_error:
+        iter_err[err] = []
 
-    for _ in trange(params["n_tests"]):
-        iter_err = dict()
-        for err in target_error:
-            iter_err[err] = []
+    for train_idx, test_idx in kf.split(g_sample):
 
-        f = params["f_gen"]()
-        g_sample, g = params["g_gen"]()
-        p_sample, p = params["p_gen"]()
-        for train_idx, test_idx in kf.split(g_sample):
+        g_train = g_sample[train_idx]
+        g_test = g_sample[test_idx]
+        p_test = p_sample[test_idx]
 
-            g_train = g_sample[train_idx]
-            g_test = g_sample[test_idx]
-            p_test = p_sample[test_idx]
+        model = params["model_gen"]
+        model.fit(g_train, f(g_train))
 
-            model = params["model_gen"]
-            model.fit(g_train, f(g_train))
+        err = lambda X: np.log(np.abs(f(X) - model.predict(X)))
 
-            err = lambda X: np.log(np.abs(f(X) - model.predict(X)))
+        kde_list = [
+            "ISE_g_estim",
+            "ISE_g_regular",
+            "ISE_g_estim_clip",
+            "ISE_g_estim_variance",
+            "ISE_g_regular_variance",
+        ]
+        if [i for i in target_error if i in kde_list]:
+            kde_sk = KernelDensity(
+                kernel="gaussian", bandwidth=hyperparams["kde_size"]
+            ).fit(g_train)
+            g_estim = lambda X: kde_sk.score_samples(X)
 
-            kde_list = [
-                "ISE_g_estim",
-                "ISE_g_regular",
-                "ISE_g_estim_clip",
-                "ISE_g_estim_variance",
-                "ISE_g_regular_variance",
-            ]
-            if [i for i in target_error if i in kde_list]:
-                kde_sk = KernelDensity(
-                    kernel="gaussian", bandwidth=hyperparams["kde_size"]
-                ).fit(g_train)
-                g_estim = lambda X: kde_sk.score_samples(X)
+        if "MCE_p" in target_error:
 
-            if "MCE_p" in target_error:
+            iter_err["MCE_p"] += [monte_carlo_error(err, p_test)]
 
-                iter_err["MCE_p"] += [monte_carlo_error(err, p_test)]
+        if "MCE_g" in target_error:
 
-            if "MCE_g" in target_error:
+            iter_err["MCE_g"] += [monte_carlo_error(err, g_test)]
 
-                iter_err["MCE_g"] += [monte_carlo_error(err, g_test)]
+        if "ISE_g" in target_error:
 
-            if "ISE_g" in target_error:
+            iter_err["ISE_g"] += [importance_sampling_error(err, p, g, g_test)]
 
-                iter_err["ISE_g"] += [importance_sampling_error(err, p, g, g_test)]
-
-            if "ISE_g_estim" in target_error:
-                iter_err["ISE_g_estim"] += [
-                    importance_sampling_error_default(
-                        lambda X: np.exp(err(X)),
-                        lambda X: np.exp(p(X)),
-                        lambda X: np.exp(g_estim(X)),
-                        g_test,
-                    )
-                ]
-
-            if "ISE_g_regular" in target_error:
-                epsilon = hyperparams["ISE_g_regular"]
-                g_estim_new = lambda X: (1 - epsilon) * np.exp(g_estim(X)) + epsilon / (
-                    conf["max_mu"] ** 2
+        if "ISE_g_estim" in target_error:
+            iter_err["ISE_g_estim"] += [
+                importance_sampling_error_default(
+                    lambda X: np.exp(err(X)),
+                    lambda X: np.exp(p(X)),
+                    lambda X: np.exp(g_estim(X)),
+                    g_test,
                 )
-                if epsilon == 0:
-                    logging.debug("Comparing to the truth for eps = 0:")
-                    delta = np.abs(
-                        (
-                            importance_sampling_error_default(
-                                lambda X: np.exp(err(X)),
-                                lambda X: np.exp(p(X)),
-                                g_estim_new,
-                                g_test,
-                            )
-                            - importance_sampling_error_default(
-                                lambda X: np.exp(err(X)),
-                                lambda X: np.exp(p(X)),
-                                lambda X: np.exp(g_estim(X)),
-                                g_test,
-                            )
-                        )[0]
-                    )
-                    logging.debug(f"delta_errors:{delta}")
-                iter_err["ISE_g_regular"] += [
-                    importance_sampling_error_default(
-                        lambda X: np.exp(err(X)),
-                        lambda X: np.exp(p(X)),
-                        g_estim_new,
-                        g_test,
-                    )
-                ]
+            ]
 
-            if "ISE_g_clip" in target_error:
-                iter_err["ISE_g_clip"] += [
-                    ISE_clip(
-                        err,
-                        p,
-                        g,
-                        g_test,
-                        hyperparams["ISE_g_clip"],
-                        smooth_flag=hyperparam_params["smooth_flag"],
-                    )
-                ]
+        if "ISE_g_regular" in target_error:
+            epsilon = hyperparams["ISE_g_regular"]
+            g_estim_new = lambda X: (1 - epsilon) * np.exp(g_estim(X)) + epsilon / (
+                conf["max_mu"] ** 2
+            )
+            if epsilon == 0:
+                logging.debug("Comparing to the truth for eps = 0:")
+                delta = np.abs(
+                    (
+                        importance_sampling_error_default(
+                            lambda X: np.exp(err(X)),
+                            lambda X: np.exp(p(X)),
+                            g_estim_new,
+                            g_test,
+                        )
+                        - importance_sampling_error_default(
+                            lambda X: np.exp(err(X)),
+                            lambda X: np.exp(p(X)),
+                            lambda X: np.exp(g_estim(X)),
+                            g_test,
+                        )
+                    )[0]
+                )
+                logging.debug(f"delta_errors:{delta}")
+            iter_err["ISE_g_regular"] += [
+                importance_sampling_error_default(
+                    lambda X: np.exp(err(X)),
+                    lambda X: np.exp(p(X)),
+                    g_estim_new,
+                    g_test,
+                )
+            ]
 
-            if "ISE_g_estim_clip" in target_error:
-                iter_err["ISE_g_estim_clip"] += [
-                    ISE_clip(
-                        err,
-                        p,
-                        g_estim,
-                        g_test,
-                        hyperparams["ISE_g_estim_clip"],
-                        smooth_flag=hyperparam_params["smooth_flag"],
-                    )
-                ]
+        if "ISE_g_clip" in target_error:
+            iter_err["ISE_g_clip"] += [
+                ISE_clip(
+                    err,
+                    p,
+                    g,
+                    g_test,
+                    hyperparams["ISE_g_clip"],
+                    smooth_flag=hyperparams_params["smooth_flag"],
+                )
+            ]
 
-            if "Mandoline" in target_error:
-                iter_err["Mandoline"] += [
-                    mandoline_error(
-                        g_test, p_test, model, f, err, n_slices=hyperparams["Mandoline"]
-                    )
-                ]
+        if "ISE_g_estim_clip" in target_error:
+            iter_err["ISE_g_estim_clip"] += [
+                ISE_clip(
+                    err,
+                    p,
+                    g_estim,
+                    g_test,
+                    hyperparams["ISE_g_estim_clip"],
+                    smooth_flag=hyperparams_params["smooth_flag"],
+                )
+            ]
 
-        for err in target_error:
-            CV_err[err] += [logsumexp(iter_err[err]) - np.log(params["n_splits"])]
+        if "Mandoline" in target_error:
+            iter_err["Mandoline"] += [
+                mandoline_error(
+                    g_test, p_test, model, f, err, n_slices=hyperparams["Mandoline"]
+                )
+            ]
+
+    for err in target_error:
+        CV_err[err] = logsumexp(iter_err[err]) - np.log(params["n_splits"])
 
     return CV_err

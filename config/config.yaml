@@ -7,21 +7,21 @@ conf:
 
 hyperparams_dict:
   kde_size : ['scott']
-  Mandoline : [1, 3, 7, 15]
-  ISE_g_regular : [0, 0.5, 0.9]
-  ISE_g_clip : [0, 0.5, 0.9]
-  ISE_g_estim_clip : [0, 0.5, 0.9]
+  Mandoline : [2, 3, 4, 5]
+  ISE_g_regular : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+  ISE_g_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+  ISE_g_estim_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
   
 params:
-  max_cov_list : [1, 3, 5, 7, 10, 15, 25, 35, 50, 70, 100]
-  xs : ["MCE_g","ISE_g","ISE_g_regular","ISE_g_estim","ISE_g_clip","ISE_g_estim_clip","Mandoline",]
+  max_cov_list : [1, 5, 7, 10, 15, 25, 35]  
+  x : ["MCE_g", "ISE_g", "ISE_g_estim"]
+  x_hyp: ["ISE_g_regular", "ISE_g_clip", "ISE_g_estim_clip", "Mandoline"]
   y : ["MCE_p"]
-  n_tests : 30
-  f : "linear"
-  model : "boosting" 
+  n_tests : 15
+  f : "GMM"
+  model : "linear" 
   n_splits : 1
 
 hyperparams_params:
-  n_hyp_tests : 20
   grid_flag : True
   smooth_flag : True
