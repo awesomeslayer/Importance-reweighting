@@ -8,17 +8,17 @@ from tqdm import trange
 from mandoline_src.mandoline import mandoline, log_density_ratio
 
 
-def mandoline_error(g_test, p_test, model, f, err, n_slices=3):
+def mandoline_error(gen_dict, n_slices=3):
     # for prediction-based slices:
     # D_src = slice_prediction(g_test, model, n_slices=n_slices)
     # D_tgt = slice_prediction(
     #    p_test, model, n_slices=n_slices
     # )
     kmeans = KMeans(n_clusters=n_slices, n_init="auto")
-    kmeans.fit(g_test)
+    kmeans.fit(gen_dict["g_test"])
 
-    D_src = slice_clusterisation(g_test, kmeans, n_slices=n_slices)
-    D_tgt = slice_clusterisation(p_test, kmeans, n_slices=n_slices)
+    D_src = slice_clusterisation(gen_dict["g_test"], kmeans, n_slices=n_slices)
+    D_tgt = slice_clusterisation(gen_dict["p_test"], kmeans, n_slices=n_slices)
 
     # Run the solver
     solved = mandoline(D_src, D_tgt, edge_list=None, sigma=1)
@@ -27,7 +27,7 @@ def mandoline_error(g_test, p_test, model, f, err, n_slices=3):
     density_ratios = np.e ** log_density_ratio(solved.Phi_D_src, solved)
 
     # print smth for max_cov ?
-    return logsumexp(np.log(density_ratios) + err(g_test)) - np.log(g_test.shape[0])
+    return np.exp(logsumexp(np.log(density_ratios) + np.log(gen_dict["err"](gen_dict["g_test"]))) - np.log(gen_dict["g_test"].shape[0]))
 
 
 def get_correct(model, X, labels, tolerance=1e-5):

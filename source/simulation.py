@@ -74,9 +74,9 @@ def random_GMM_samples(config):
     )
     samples = gmm.sample(config["n_samples"])
 
-    log_density = lambda X: gmm.score_samples(X)
+    density = lambda X: np.exp(gmm.score_samples(X))
 
-    return samples[0], log_density
+    return samples[0], density
 
 
 def random_uniform_samples(config, fixed_region: bool = False):
@@ -98,11 +98,11 @@ def random_uniform_samples(config, fixed_region: bool = False):
     w_a = np.random.random((config["n_samples"], config["n_dim"]))
     w_b = 1 - w_a
 
-    log_density = (
-        lambda X: np.log(((a < X) & (X < b)).all(axis=1)) - np.log((b - a)).sum()
+    density = (
+        lambda X: np.exp(np.log(((a < X) & (X < b)).all(axis=1)) - np.log((b - a)).sum())
     )
 
-    return w_a * a + w_b * b, log_density
+    return w_a * a + w_b * b, density
 
 
 def random_GP_func(config):

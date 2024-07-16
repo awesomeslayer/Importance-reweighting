@@ -19,17 +19,17 @@ def max_cov_plot(cfg: DictConfig):
     for x in params["x"] + params["x_hyp"]:
         errors_plot[x] = []
 
-    logging.info(f"xs + y = {params['x'] + params['x_hyp'] + params['y']}")
-    logging.info(f"f = {params['f']}, model = {params['model']}")
+    logging.info(f"\nxs + y = {params['x'] + params['x_hyp'] + params['y']}\n")
+    logging.info(f"\nf = {params['f']}, model = {params['model']}\n")
     logging.info(
-        f"config: max_mu = {conf['max_mu']}, n_samples = {conf['n_samples']}, n_dim = {conf['n_dim']}, n_components = {conf['n_components']}, n_splits = {params['n_splits']}, kde_size = {hyperparams_dict['kde_size']}"
+        f"\nconfig: max_mu = {conf['max_mu']}, n_samples = {conf['n_samples']}, n_dim = {conf['n_dim']}, n_components = {conf['n_components']}, n_splits = {params['n_splits']}, kde_size = {hyperparams_dict['kde_size']}\n"
     )
     logging.info(
-        f"slices_list = {hyperparams_dict['Mandoline']},\n regular_list = {hyperparams_dict['ISE_g_regular']},\n clip_list = {hyperparams_dict['ISE_g_clip']},\n max_cov_list = {params['max_cov_list']}"
+        f"\nslices_list = {hyperparams_dict['Mandoline']},\n regular_list = {hyperparams_dict['ISE_g_regular']},\n clip_list = {hyperparams_dict['ISE_g_clip']},\n max_cov_list = {params['max_cov_list']}\n"
     )
-    logging.info(f"n_tests = {params['n_tests']}")
+    logging.info(f"\nn_tests = {params['n_tests']}\n")
     logging.info(
-        f"Status FindBestParam = {hyperparams_params['grid_flag']}, smooth clipping = {hyperparams_params['smooth_flag']}"
+        f"\ngrid_flag = {hyperparams_params['grid_flag']}, smootg_clipping = {hyperparams_params['smooth_flag']}\n"
     )
 
     for max_cov in params["max_cov_list"]:
@@ -47,12 +47,11 @@ def max_cov_plot(cfg: DictConfig):
             hyperparams_dict,
         )
 
-        log.info(f"errors for max_cov={max_cov}:\n {elem}")
+        logging.info(f"\nerrors for max_cov={max_cov}:\n {elem}\n")
 
         for x in params["x"] + params["x_hyp"]:
-            error[x] += elem["mape"][x]
-            errors_plot[x].append(error[x])
-
+            errors_plot[x] += elem["mape"][x]
+            
     fig, ax = plt.subplots(figsize=(12, 12))
     for x in params["x"] + params["x_hyp"]:
         ax.plot(params["max_cov_list"], errors_plot[x], label=f"{x}")

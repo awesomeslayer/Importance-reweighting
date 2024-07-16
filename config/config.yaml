@@ -2,22 +2,22 @@ conf:
   max_mu : 5 
   n_samples : 4000
   n_dim : 2 
-  max_cov : 1
+  max_cov : 200
   n_components : 15
 
 hyperparams_dict:
-  kde_size : ['scott']
-  Mandoline : [2, 3, 4, 5]
-  ISE_g_regular : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
-  ISE_g_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
-  ISE_g_estim_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+  kde_size : [5]
+  Mandoline : [2]
+  ISE_g_regular : [0, 0.1]
+  ISE_g_clip : [0.2, 0.1]
+  ISE_g_estim_clip : [0.2, 0.1]
   
 params:
   max_cov_list : [1, 5, 7, 10, 15, 25, 35]  
   x : ["MCE_g", "ISE_g", "ISE_g_estim"]
   x_hyp: ["ISE_g_regular", "ISE_g_clip", "ISE_g_estim_clip", "Mandoline"]
   y : ["MCE_p"]
-  n_tests : 15
+  n_tests : 3
   f : "GMM"
   model : "linear" 
   n_splits : 1
