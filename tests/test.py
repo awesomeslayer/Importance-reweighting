@@ -2,6 +2,7 @@ from source.estimations import (ISE_clip, importance_sampling_error,
                                 monte_carlo_error)
 from source.mandoline_estimation import mandoline_error
 
+
 def test(
     conf,
     hyperparams_params,
@@ -74,7 +75,9 @@ def test(
 
     if "Mandoline" in target_error:
         iter_err["Mandoline"] = mandoline_error(
-            gen_dict, n_slices=hyperparams["Mandoline"], slice_method=hyperparams_params['slice_method']
+            gen_dict,
+            n_slices=hyperparams["Mandoline"],
+            slice_method=hyperparams_params["slice_method"],
         )
 
     return iter_err

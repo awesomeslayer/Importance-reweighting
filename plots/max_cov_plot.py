@@ -1,10 +1,12 @@
 import logging
+
 import hydra
 import matplotlib.pyplot as plt
 import tqdm
 from omegaconf import DictConfig, OmegaConf
 
 from source.run import run
+
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")
 def max_cov_plot(cfg: DictConfig):
@@ -38,18 +40,12 @@ def max_cov_plot(cfg: DictConfig):
         for x in params["x"] + params["x_hyp"]:
             error[x] = 0
 
-        elem = run(
-            conf,
-            params,
-            hyperparams_params,
-            hyperparams_dict,
-            log
-        )
+        elem = run(conf, params, hyperparams_params, hyperparams_dict, log)
 
         log.info(f"\nmape's and rmse's for max_cov={max_cov}:\n {elem}\n")
 
         for x in params["x"] + params["x_hyp"]:
-            errors_plot[x] += elem["mape"][x]   
+            errors_plot[x] += elem["mape"][x]
 
     fig, ax = plt.subplots(figsize=(12, 12))
     for x in params["x"] + params["x_hyp"]:
@@ -57,10 +53,10 @@ def max_cov_plot(cfg: DictConfig):
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("errors", fontsize=26)
-    #ax.set_xscale("log")
+    # ax.set_xscale("log")
     plt.savefig(f"./plots/results/{params['model']}_{params['f']}_max_cov.pdf")
     plt.tight_layout()
-    #plt.show()
+    # plt.show()
 
     fig, ax = plt.subplots(figsize=(12, 12))
     for x in ["MCE_g", "ISE_g_estim", "ISE_g_regular", "ISE_g_estim_clip", "Mandoline"]:
@@ -68,10 +64,10 @@ def max_cov_plot(cfg: DictConfig):
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("errors", fontsize=26)
-    #ax.set_xscale("log")
+    # ax.set_xscale("log")
     plt.savefig(f"./plots/results/{params['model']}_{params['f']}_max_cov_estim.pdf")
     plt.tight_layout()
-    #plt.show()
+    # plt.show()
 
     fig, ax = plt.subplots(figsize=(12, 12))
     for x in ["MCE_g", "ISE_g", "ISE_g_clip", "Mandoline"]:
@@ -79,10 +75,10 @@ def max_cov_plot(cfg: DictConfig):
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("errors", fontsize=26)
-    #ax.set_xscale("log")
+    # ax.set_xscale("log")
     plt.savefig(f"./plots/results/{params['model']}_{params['f']}_max_cov_no_estim.pdf")
     plt.tight_layout()
-    #plt.show()
+    # plt.show()
 
 
 log = logging.getLogger(__name__)

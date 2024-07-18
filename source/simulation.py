@@ -1,9 +1,10 @@
+from copy import copy
+
 import GPy
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.linalg import cholesky, solve_triangular
 from sklearn.mixture import GaussianMixture
-from copy import copy
 
 np.seterr(divide="ignore")
 np.random.seed(42)
@@ -99,8 +100,9 @@ def random_uniform_samples(config, fixed_region: bool = False):
     w_a = np.random.random((config["n_samples"], config["n_dim"]))
     w_b = 1 - w_a
 
-    log_density = lambda X: np.log(((a < X) & (X < b)).all(axis=1)) - np.log((b - a)).sum()
-    
+    log_density = (
+        lambda X: np.log(((a < X) & (X < b)).all(axis=1)) - np.log((b - a)).sum()
+    )
 
     return w_a * a + w_b * b, log_density
 
@@ -108,14 +110,18 @@ def random_uniform_samples(config, fixed_region: bool = False):
 def random_GP_func(config):
     u_config = copy(config)
     u_config["n_samples"] = config["n_GP_components"]
-    
+
     X = random_uniform_samples(u_config)[0]
     Y = np.random.randn(u_config["n_GP_components"], 1)
-    
+
     kernel = GPy.kern.RBF(input_dim=2, variance=1.0, lengthscale=1.0)
     model = GPy.models.GPRegression(X, Y, kernel, noise_var=1e-10)
 
-    heatmap(u_config, lambda X: model.posterior_samples_f(X, full_cov=True, size=1), n_points = 50)
+    heatmap(
+        u_config,
+        lambda X: model.posterior_samples_f(X, full_cov=True, size=1),
+        n_points=50,
+    )
     return lambda X: model.posterior_samples_f(X, full_cov=True, size=1)
 
 
