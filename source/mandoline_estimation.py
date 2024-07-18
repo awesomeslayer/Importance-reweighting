@@ -1,34 +1,35 @@
-import numpy as np
-import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.cluster import KMeans
+import numpy as np
 from scipy.special import logsumexp
-from sklearn.model_selection import KFold, ShuffleSplit
-from tqdm import trange
-from mandoline_src.mandoline import mandoline, log_density_ratio
+from sklearn.cluster import KMeans
+import logging
+
+from mandoline_src.mandoline import log_density_ratio, mandoline
 
 
-def mandoline_error(gen_dict, n_slices=3):
-    # for prediction-based slices:
-    # D_src = slice_prediction(g_test, model, n_slices=n_slices)
-    # D_tgt = slice_prediction(
-    #    p_test, model, n_slices=n_slices
-    # )
-    kmeans = KMeans(n_clusters=n_slices, n_init="auto")
-    kmeans.fit(gen_dict["g_test"])
+def mandoline_error(gen_dict, n_slices=3, slice_method = 'clusters'):
+    if(slice_method == 'pred'):
+        D_src = slice_prediction(gen_dict["g_test"], gen_dict["model"], n_slices=n_slices)
+        D_tgt = slice_prediction(gen_dict["p_test"], gen_dict["model"], n_slices=n_slices)
+    
+    elif(slice_method == 'clusters'):
+        kmeans = KMeans(n_clusters=n_slices, n_init="auto")
+        kmeans.fit(gen_dict["g_test"])
 
-    D_src = slice_clusterisation(gen_dict["g_test"], kmeans, n_slices=n_slices)
-    D_tgt = slice_clusterisation(gen_dict["p_test"], kmeans, n_slices=n_slices)
-
+        D_src = slice_clusterisation(gen_dict["g_test"], kmeans, n_slices=n_slices)
+        D_tgt = slice_clusterisation(gen_dict["p_test"], kmeans, n_slices=n_slices)
+    else:
+        logging.info(f"Bad slicing_method, choose correct!")
+        return False
     # Run the solver
     solved = mandoline(D_src, D_tgt, edge_list=None, sigma=1)
 
     # Compute the weights on the source dataset
-    density_ratios = np.e ** log_density_ratio(solved.Phi_D_src, solved)
+    log_density_ratios = log_density_ratio(solved.Phi_D_src, solved)
 
     # print smth for max_cov ?
-    return np.exp(logsumexp(np.log(density_ratios) + np.log(gen_dict["err"](gen_dict["g_test"]))) - np.log(gen_dict["g_test"].shape[0]))
-
+    return logsumexp(log_density_ratios + gen_dict["err"](gen_dict["g_test"]))- np.log(gen_dict["g_test"].shape[0])
+    
 
 def get_correct(model, X, labels, tolerance=1e-5):
     """

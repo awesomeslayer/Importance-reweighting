@@ -1,14 +1,12 @@
 from functools import partial
 from types import SimpleNamespace
-from typing import Optional, List
+from typing import List, Optional
 
 import numpy as np
-
-from scipy.special import logsumexp
-
 import scipy.optimize
 import scipy.special
 import sklearn.metrics.pairwise as skmetrics
+from scipy.special import logsumexp
 
 
 def Phi(

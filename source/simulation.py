@@ -1,8 +1,8 @@
-import numpy as np
+import GPy
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.linalg import cholesky, solve_triangular
 from sklearn.mixture import GaussianMixture
-import GPy
 
 np.seterr(divide="ignore")
 np.random.seed(42)
@@ -74,9 +74,9 @@ def random_GMM_samples(config):
     )
     samples = gmm.sample(config["n_samples"])
 
-    density = lambda X: np.exp(gmm.score_samples(X))
+    log_density = lambda X: gmm.score_samples(X)
 
-    return samples[0], density
+    return samples[0], log_density
 
 
 def random_uniform_samples(config, fixed_region: bool = False):
@@ -98,11 +98,10 @@ def random_uniform_samples(config, fixed_region: bool = False):
     w_a = np.random.random((config["n_samples"], config["n_dim"]))
     w_b = 1 - w_a
 
-    density = (
-        lambda X: np.exp(np.log(((a < X) & (X < b)).all(axis=1)) - np.log((b - a)).sum())
-    )
+    log_density = lambda X: np.log(((a < X) & (X < b)).all(axis=1)) - np.log((b - a)).sum()
+    
 
-    return w_a * a + w_b * b, density
+    return w_a * a + w_b * b, log_density
 
 
 def random_GP_func(config):
@@ -117,7 +116,7 @@ def random_GP_func(config):
 
     fun = lambda X: model.posterior_samples_f(X, full_cov=True, size=1)
 
-    # heatmap(config, fun, n_points = 50)
+    #heatmap(config, fun, n_points = 50)
 
     return fun
 
@@ -137,8 +136,8 @@ def heatmap(config, fun, n_points=50):
     plt.colorbar(label="Prediction")
     plt.title("Gaussian Process Prediction")
     plt.savefig("./plots/results/GP.pdf")
-    plt.xlabel("X1")
-    plt.ylabel("X2")
+    plt.xlabel("X")
+    plt.ylabel("Y")
     # plt.show()
 
 
