@@ -20,7 +20,7 @@ def max_cov_plot(cfg: DictConfig):
     log.info(f"\nxs + y = {params['x'] + params['x_hyp'] + params['y']}\n")
     log.info(f"\nf = {params['f']}, model = {params['model']}\n")
     log.info(
-        f"\nconfig: max_mu = {conf['max_mu']}, n_samples = {conf['n_samples']}, n_dim = {conf['n_dim']}, n_components = {conf['n_components']}, n_splits = {params['n_splits']}, kde_size = {hyperparams_dict['kde_size']}\n"
+        f"\nconfig: max_mu = {conf['max_mu']}, n_samples = {conf['n_samples']}, n_dim = {conf['n_dim']}, n_components = {conf['n_components']}, n_splits = {params['n_splits']}, kde_size = {hyperparams_dict['kde_size']}, log_flag = {params['log_flag']}\n"
     )
     log.info(
         f"\nslices_list = {hyperparams_dict['Mandoline']},\n regular_list = {hyperparams_dict['ISE_g_regular']},\n clip_list = {hyperparams_dict['ISE_g_clip']},\n max_cov_list = {params['max_cov_list']}\n"

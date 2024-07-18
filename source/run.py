@@ -71,7 +71,7 @@ def run(
     # if needed find best hyperparams and get best_mape/rmse dictionaries with them
     best_metrics_dict, metrics_dict = count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, hyperparams_params["grid_flag"], log)
     if hyperparams_params["grid_flag"]:
-        extr_plots(conf, params, metrics_dict, hyperparams_dict)
+        extr_plots(conf, params, metrics_dict, hyperparams_dict, params['log_flag'])
     log.info(f"\nbest_metrics_dict for max_cov {conf['max_cov']}= \n{best_metrics_dict}\n")
     
     return best_metrics_dict

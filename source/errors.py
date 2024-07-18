@@ -4,6 +4,7 @@ from tests.test import test
 import numpy as np
 from tqdm import trange
 from .errors_init import errors_init
+#from .LSCV import LSCV_KL 
 
 def errors_test(
     err_dict,
@@ -56,8 +57,12 @@ def fill_gen_dict(gen_dict, params, hyperparams_dict, g_sample, p_sample, train_
         "ISE_g_estim_clip",
     ]
     if [i for i in params["x"] + params["x_hyp"] + params["y"] if i in kde_list]:
+        if(hyperparams_dict["kde_size"][0] == 'LSCV'):
+            bandwidth = LSCV_KL()
+        else:
+            bandwidth = hyperparams_dict["kde_size"][0]
         kde_sk = KernelDensity(
-            kernel="gaussian", bandwidth=hyperparams_dict["kde_size"][0]
+            kernel="gaussian", bandwidth=bandwidth
         ).fit(gen_dict["g_train"])
         gen_dict["g_estim"] = lambda X: kde_sk.score_samples(X)
 

@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.linalg import cholesky, solve_triangular
 from sklearn.mixture import GaussianMixture
+from copy import copy
 
 np.seterr(divide="ignore")
 np.random.seed(42)
@@ -105,20 +106,17 @@ def random_uniform_samples(config, fixed_region: bool = False):
 
 
 def random_GP_func(config):
-    u_config = config
-    u_config["n_samples"] = config["n_components"]
-
+    u_config = copy(config)
+    u_config["n_samples"] = config["n_GP_components"]
+    
     X = random_uniform_samples(u_config)[0]
-    Y = np.random.randn(config["n_components"], 1)
-
+    Y = np.random.randn(u_config["n_GP_components"], 1)
+    
     kernel = GPy.kern.RBF(input_dim=2, variance=1.0, lengthscale=1.0)
     model = GPy.models.GPRegression(X, Y, kernel, noise_var=1e-10)
 
-    fun = lambda X: model.posterior_samples_f(X, full_cov=True, size=1)
-
-    #heatmap(config, fun, n_points = 50)
-
-    return fun
+    heatmap(u_config, lambda X: model.posterior_samples_f(X, full_cov=True, size=1), n_points = 50)
+    return lambda X: model.posterior_samples_f(X, full_cov=True, size=1)
 
 
 def heatmap(config, fun, n_points=50):
@@ -135,7 +133,7 @@ def heatmap(config, fun, n_points=50):
     plt.contourf(xx, yy, predicted_values, levels=20, cmap="viridis")
     plt.colorbar(label="Prediction")
     plt.title("Gaussian Process Prediction")
-    plt.savefig("./plots/results/GP.pdf")
+    plt.savefig("./plots/results/fun_GP.pdf")
     plt.xlabel("X")
     plt.ylabel("Y")
     # plt.show()
