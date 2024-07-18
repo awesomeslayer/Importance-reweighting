@@ -1,16 +1,17 @@
 from functools import partial
+
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import KFold, ShuffleSplit
-
 from tqdm import trange
 
+from plots.extr_plots import extr_plots
+
+from .errors import count_metrics, errors_test
+from .errors_init import errors_init, find_sizes
 from .simulation import (DummyModel, random_gaussian_mixture_func,
                          random_GMM_samples, random_GP_func,
                          random_linear_func, random_uniform_samples)
 
-from plots.extr_plots import extr_plots
-from .errors import errors_test, count_metrics 
-from .errors_init import errors_init, find_sizes
 
 def run(
     conf,
@@ -23,7 +24,7 @@ def run(
         "ISE_g_clip": [0],
         "ISE_g_estim_clip": [0],
     },
-    log = None
+    log=None,
 ):
     f_gens = {
         "linear": partial(random_linear_func, conf),
@@ -48,7 +49,9 @@ def run(
     sizes = find_sizes(params, hyperparams_dict)
     log.debug(f"\n sizes = {sizes}\n")
     # init errors dictionaries
-    err_dict, err_hyp_dict = errors_init(params, sizes, list(), hyperparams_params["grid_flag"])
+    err_dict, err_hyp_dict = errors_init(
+        params, sizes, list(), hyperparams_params["grid_flag"]
+    )
 
     log.debug(f"\nerr_dict init = {err_dict}\n")
     log.debug(f"\nerr_hyp_dict init = {err_hyp_dict}\n")
@@ -65,14 +68,23 @@ def run(
             sizes,
             kf,
             i,
-            log
+            log,
         )
 
     # if needed find best hyperparams and get best_mape/rmse dictionaries with them
-    best_metrics_dict, metrics_dict = count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, hyperparams_params["grid_flag"], log)
+    best_metrics_dict, metrics_dict = count_metrics(
+        params,
+        hyperparams_dict,
+        sizes,
+        err_hyp_dict,
+        err_dict,
+        hyperparams_params["grid_flag"],
+        log,
+    )
     if hyperparams_params["grid_flag"]:
-        extr_plots(conf, params, metrics_dict, hyperparams_dict)
-    log.info(f"\nbest_metrics_dict for max_cov {conf['max_cov']}= \n{best_metrics_dict}\n")
-    
-    return best_metrics_dict
+        extr_plots(conf, params, metrics_dict, hyperparams_dict, params["log_flag"])
+    log.info(
+        f"\nbest_metrics_dict for max_cov {conf['max_cov']}= \n{best_metrics_dict}\n"
+    )
 
+    return best_metrics_dict

@@ -1,9 +1,13 @@
-import numpy as np
-from scipy.special import logsumexp
 import logging
 
+import numpy as np
+from scipy.special import logsumexp
+
+
 def importance_sampling_error(err, p, g, g_sample):
-    return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(g_sample.shape[0])
+    return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(
+        g_sample.shape[0]
+    )
 
 
 def monte_carlo_error(err, p_sample):
@@ -39,15 +43,13 @@ def ISE_clip(err, p, g, g_sample, eps, smooth_flag=True):
     """
     clipped_array = []
     for p_elem, g_elem in zip(p(g_sample), g(g_sample)):
-        
-        
+
         weight = np.exp(p_elem - g_elem)
-        if(np.isnan(weight)):
+        if np.isnan(weight):
             logging.info(weight)
         if smooth_flag:
             clipped_array.append(np.log(smooth_clip(weight, eps)))
         else:
             clipped_array.append(np.log(clip(weight, 1 - eps, 1 + eps)))
-    
-    return logsumexp(clipped_array + err(g_sample)) - np.log(g_sample.shape[0])
 
+    return logsumexp(clipped_array + err(g_sample)) - np.log(g_sample.shape[0])
