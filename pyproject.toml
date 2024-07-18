@@ -1,13 +1,16 @@
 [tool.poetry]
-name = "spatial-errors"
+name = "LARSS IS"
 version = "0.1.0"
-description = "Task for LARSS Lab, containing experiments about fixing IS problems"
-authors = ["Most_hated <ftalick01@gmail.com>"]
-readme = "README.md"
+description = ""
+authors = ["MOST HATED"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-
+numpy = "*"
+matplotlib = "*"
+scipy = "*"
+scikit-learn = "*"
+tqdm = "*"
 
 [build-system]
 requires = ["poetry-core"]

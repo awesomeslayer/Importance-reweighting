@@ -1,5 +1,6 @@
-import numpy as np
+import GPy
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.linalg import cholesky, solve_triangular
 from sklearn.mixture import GaussianMixture
 
@@ -97,11 +98,47 @@ def random_uniform_samples(config, fixed_region: bool = False):
     w_a = np.random.random((config["n_samples"], config["n_dim"]))
     w_b = 1 - w_a
 
-    log_density = (
-        lambda X: np.log(((a < X) & (X < b)).all(axis=1)) - np.log((b - a)).sum()
-    )
+    log_density = lambda X: np.log(((a < X) & (X < b)).all(axis=1)) - np.log((b - a)).sum()
+    
 
     return w_a * a + w_b * b, log_density
+
+
+def random_GP_func(config):
+    u_config = config
+    u_config["n_samples"] = config["n_components"]
+
+    X = random_uniform_samples(u_config)[0]
+    Y = np.random.randn(config["n_components"], 1)
+
+    kernel = GPy.kern.RBF(input_dim=2, variance=1.0, lengthscale=1.0)
+    model = GPy.models.GPRegression(X, Y, kernel, noise_var=1e-10)
+
+    fun = lambda X: model.posterior_samples_f(X, full_cov=True, size=1)
+
+    #heatmap(config, fun, n_points = 50)
+
+    return fun
+
+
+def heatmap(config, fun, n_points=50):
+    x_range = np.linspace(0, config["max_mu"], 50)
+    y_range = np.linspace(0, config["max_mu"], 50)
+    xx, yy = np.meshgrid(x_range, y_range)
+    grid_points = np.c_[xx.ravel(), yy.ravel()]
+
+    # Predicting values for the grid points
+    predicted_values = fun(grid_points).reshape(50, 50)
+
+    # Plotting the results
+    plt.figure(figsize=(10, 6))
+    plt.contourf(xx, yy, predicted_values, levels=20, cmap="viridis")
+    plt.colorbar(label="Prediction")
+    plt.title("Gaussian Process Prediction")
+    plt.savefig("./plots/results/GP.pdf")
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    # plt.show()
 
 
 def random_linear_func(config):

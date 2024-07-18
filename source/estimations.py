@@ -1,28 +1,9 @@
 import numpy as np
 from scipy.special import logsumexp
-
+import logging
 
 def importance_sampling_error(err, p, g, g_sample):
-    """
-    :param err: log-error function
-    :param p: log-probability density of target distribution
-    :param g: log-probability density of sample distribution
-    :param g_sample:
-    :return: log-ISE
-    """
-    # print(f"error IS:{logsumexp(p(g_sample) - g(g_sample) + err(g_sample))}")
-    return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(
-        g_sample.shape[0]
-    )
-
-
-def importance_sampling_error_default(err, p, g, g_sample):
-    # from log-densities for default because of log(0.000000000001) errors
-    sum = 0
-    for i in range(g_sample.shape[0]):
-        sum = sum + err([g_sample[i]]) * p([g_sample[i]]) / g([g_sample[i]])
-
-    return np.log(sum / g_sample.shape[0])
+    return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(g_sample.shape[0])
 
 
 def monte_carlo_error(err, p_sample):
@@ -31,7 +12,6 @@ def monte_carlo_error(err, p_sample):
     :param p_sample:
     :return: log-MCE
     """
-    # print(f"True error Mce_p/Mce_g:{logsumexp(err(p_sample))}")
     return logsumexp(err(p_sample)) - np.log(p_sample.shape[0])
 
 
@@ -43,10 +23,12 @@ def clip(a, b_min, b_max):
     else:
         return a
 
-def smooth_clip(x, eps):
-    return((1+eps)/(1 + (2*eps/(1-eps))*np.exp(-x)))
 
-def ISE_clip(err, p, g, g_sample, eps, smooth_flag = True):
+def smooth_clip(x, eps):
+    return (1 + eps) / (1 + (2 * eps / (1 - eps)) * np.exp(-x))
+
+
+def ISE_clip(err, p, g, g_sample, eps, smooth_flag=True):
     """
     :param err: log-error function
     :param p: log-probability density of target distribution
@@ -56,11 +38,16 @@ def ISE_clip(err, p, g, g_sample, eps, smooth_flag = True):
     :return: log-ISE with clip
     """
     clipped_array = []
-    if smooth_flag:
-        for p_elem, g_elem in zip(p(g_sample), g(g_sample)):
-            clipped_array.append(np.log(smooth_clip(np.exp(p_elem - g_elem), eps)))
-    else:
-        for p_elem, g_elem in zip(p(g_sample), g(g_sample)):
-                clipped_array.append(np.log(clip(np.exp(p_elem - g_elem), 1-eps, 1+eps)))
+    for p_elem, g_elem in zip(p(g_sample), g(g_sample)):
         
+        
+        weight = np.exp(p_elem - g_elem)
+        if(np.isnan(weight)):
+            logging.info(weight)
+        if smooth_flag:
+            clipped_array.append(np.log(smooth_clip(weight, eps)))
+        else:
+            clipped_array.append(np.log(clip(weight, 1 - eps, 1 + eps)))
+    
     return logsumexp(clipped_array + err(g_sample)) - np.log(g_sample.shape[0])
+

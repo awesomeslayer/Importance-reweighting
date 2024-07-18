@@ -1,14 +1,12 @@
 from functools import partial
 from types import SimpleNamespace
-from typing import Optional, List
+from typing import List, Optional
 
 import numpy as np
-
-from scipy.special import logsumexp
-
 import scipy.optimize
 import scipy.special
 import sklearn.metrics.pairwise as skmetrics
+from scipy.special import logsumexp
 
 
 def Phi(
@@ -106,11 +104,8 @@ def mandoline(
     kernel = partial(skmetrics.rbf_kernel, gamma=sigma)
 
     def llkliep_f(x):
-        #print(Phi_D_tgt)
-        #changed newaxis
-        #print(x[np.newaxis, :])
         obj = kernel(
-            Phi_D_tgt, x[np.newaxis,:]
+            Phi_D_tgt, x[np.newaxis, :]
         ).sum() - n_tgt * scipy.special.logsumexp(kernel(Phi_D_src, x[np.newaxis, :]))
         return -obj
 
