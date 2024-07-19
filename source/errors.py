@@ -6,8 +6,7 @@ from tests.metrics import mape, rmse
 from tests.test import test
 
 from .errors_init import errors_init
-
-# from .LSCV import LSCV_KL
+from .LSCV import KL_LSCV_find_bw
 
 
 def errors_test(
@@ -87,13 +86,15 @@ def fill_gen_dict(
         "ISE_g_estim_clip",
     ]
     if [i for i in params["x"] + params["x_hyp"] + params["y"] if i in kde_list]:
-        if hyperparams_dict["kde_size"][0] == "LSCV":
-            bandwidth = LSCV_KL()
-        else:
-            bandwidth = hyperparams_dict["kde_size"][0]
-        kde_sk = KernelDensity(kernel="gaussian", bandwidth=bandwidth).fit(
-            gen_dict["g_train"]
-        )
+        bw = hyperparams_dict["bandwidth"]
+        if bw == "KL_LSCV":
+            bw = KL_LSCV_find_bw(hyperparams_dict["beta"])
+            log.debug(f"current bandwidth for KL_LSCV is: {bw}")
+
+        kde_sk = KernelDensity(kernel="gaussian", bandwidth=bw).fit(gen_dict["g_train"])
+        if bw == "scott" or bw == "silverman":
+            hyperparams_dict["bandwidth"] = kde_sk.bandwidth_
+            log.debug(f"current for scott/silvername bandwidth is: {bw}")
         gen_dict["g_estim"] = lambda X: kde_sk.score_samples(X)
 
     log.debug(f"\ng_estim : {gen_dict['g_estim']}\n")
@@ -128,7 +129,7 @@ def fill_errors(
     # for hyperparams
     if hyperparams_params["grid_flag"]:
         for j in trange(sizes["max_size"]):
-            hyperparams = {"kde_size": hyperparams_dict["kde_size"][0]}
+            hyperparams = {"kde_size": hyperparams_dict["bandwidth"]}
             x_estim_temp = []
             for x_temp in params["x_hyp"]:
                 if j < sizes[x_temp]:
@@ -158,7 +159,7 @@ def fill_errors(
             gen_dict,
             params["x_hyp"],
             hyperparams={
-                "kde_size": hyperparams_dict["kde_size"][0],
+                "kde_size": hyperparams_dict["bandwidth"],
                 "n_slices": hyperparams_dict["Mandoline"][0],
                 "ISE_g_regular": hyperparams_dict["ISE_g_regular"][0],
                 "ISE_g_clip": hyperparams_dict["ISE_g_clip"][0],
@@ -215,8 +216,8 @@ def count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, flag,
     y_err = np.array(err_dict[params["y"][0]])
     for x_temp in params["x"]:
         x_err = np.array(err_dict[x_temp])
-        best_metrics_dict["mape"][x_temp] = [mape(x_err, y_err)]
-        best_metrics_dict["rmse"][x_temp] = [rmse(x_err, y_err)]
+        best_metrics_dict["mape"][x_temp] = mape(x_err, y_err)
+        best_metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
 
     metrics_dict = {"mape": {}, "rmse": {}}
     for x_temp in params["x_hyp"]:
@@ -234,19 +235,11 @@ def count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, flag,
                 metrics_dict["mape"][x_temp].index(min(metrics_dict["mape"][x_temp]))
             ]
 
-            best_metrics_dict["mape"][x_temp] = [
-                metrics_dict["mape"][x_temp][
-                    metrics_dict["mape"][x_temp].index(
-                        min(metrics_dict["mape"][x_temp])
-                    )
-                ]
+            best_metrics_dict["mape"][x_temp] = metrics_dict["mape"][x_temp][
+                metrics_dict["mape"][x_temp].index(min(metrics_dict["mape"][x_temp]))
             ]
-            best_metrics_dict["rmse"][x_temp] = [
-                metrics_dict["rmse"][x_temp][
-                    metrics_dict["mape"][x_temp].index(
-                        min(metrics_dict["mape"][x_temp])
-                    )
-                ]
+            best_metrics_dict["rmse"][x_temp] = metrics_dict["rmse"][x_temp][
+                metrics_dict["mape"][x_temp].index(min(metrics_dict["mape"][x_temp]))
             ]
 
         log.info(f"\nbest hyperparams:\n {best_hyperparams}\n")
@@ -254,7 +247,7 @@ def count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, flag,
     else:
         for x_temp in params["x_hyp"]:
             x_err = np.array(err_dict[x_temp])
-            best_metrics_dict["mape"][x_temp] = [mape(x_err, y_err)]
-            best_metrics_dict["rmse"][x_temp] = [rmse(x_err, y_err)]
+            best_metrics_dict["mape"][x_temp] = mape(x_err, y_err)
+            best_metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
 
     return best_metrics_dict, metrics_dict

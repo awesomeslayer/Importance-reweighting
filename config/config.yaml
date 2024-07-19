@@ -6,24 +6,25 @@ conf:
   n_GP_components : 5
 
 hyperparams_dict:
-  kde_size : [5]
-  Mandoline : [3, 6, 9, 15, 17, 20, 25, 30]
-  ISE_g_regular : [0, 0.002, 0.005, 0.007, 0.015, 0.025, 0.04, 0.05, 0.06, 0.075, 0.09, 0.1, 0.2, 0.4, 0.6, 0.9]
-  ISE_g_clip : [0, 0.05, 0.1, 0.15, 0.2, 0.30, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.8, 0.9, 0.95]
-  ISE_g_estim_clip : [0, 0.05, 0.1, 0.15, 0.2, 0.30, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.8, 0.9, 0.95]
+  Mandoline : [3, 6]
+  ISE_g_regular : [0, 0.002]
+  ISE_g_clip : [0, 0.05]
+  ISE_g_estim_clip : [0, 0.05]
   
 params:
-  max_cov_list : [1, 20, 40, 60, 80, 100, 120, 150, 200]  
+  max_cov_list : [1, 20]  
   x : ["MCE_g", "ISE_g", "ISE_g_estim"]
   x_hyp: ["ISE_g_regular", "ISE_g_clip", "ISE_g_estim_clip", "Mandoline"]
   y : ["MCE_p"]
-  n_tests : 25
+  n_tests : 2
   f : "linear"
   model : "linear" 
   n_splits : 1
-  log_flag : True
+  log_flag : False
 
 hyperparams_params:
+  bw_list : [5, 9]
+  beta : 0
   grid_flag : True
   smooth_flag : True
   slice_method : 'clusters'
