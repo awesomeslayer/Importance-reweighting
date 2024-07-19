@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.neighbors import KernelDensity
 from tqdm import trange
+import statsmodels.api as sm 
 
 from tests.metrics import mape, rmse
 from tests.test import test
@@ -88,8 +89,14 @@ def fill_gen_dict(
     if [i for i in params["x"] + params["x_hyp"] + params["y"] if i in kde_list]:
         bw = hyperparams_dict["bandwidth"]
         if bw == "KL_LSCV":
-            bw = KL_LSCV_find_bw(hyperparams_dict["beta"])
+            bw = KL_LSCV_find_bw(gen_dict['g_train'], beta = hyperparams_dict["beta"])
             log.debug(f"current bandwidth for KL_LSCV is: {bw}")
+
+            #if(hyperparams_dict["beta"] == 0):
+            #    dens_u = sm.nonparametric.KDEMultivariate(data=gen_dict['g_train'], var_type='cc', bw='cv_ls')
+            #    print(f"best lib bw's:{dens_u.bw}")
+            #    print(f"our lsvc beta = 0 bw: {bw}")
+                    
 
         kde_sk = KernelDensity(kernel="gaussian", bandwidth=bw).fit(gen_dict["g_train"])
         if bw == "scott" or bw == "silverman":
