@@ -1,18 +1,23 @@
+import logging
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import logsumexp
 from sklearn.cluster import KMeans
-import logging
 
 from mandoline_src.mandoline import log_density_ratio, mandoline
 
 
-def mandoline_error(gen_dict, n_slices=3, slice_method = 'clusters'):
-    if(slice_method == 'pred'):
-        D_src = slice_prediction(gen_dict["g_test"], gen_dict["model"], n_slices=n_slices)
-        D_tgt = slice_prediction(gen_dict["p_test"], gen_dict["model"], n_slices=n_slices)
-    
-    elif(slice_method == 'clusters'):
+def mandoline_error(gen_dict, n_slices=3, slice_method="clusters"):
+    if slice_method == "pred":
+        D_src = slice_prediction(
+            gen_dict["g_test"], gen_dict["model"], n_slices=n_slices
+        )
+        D_tgt = slice_prediction(
+            gen_dict["p_test"], gen_dict["model"], n_slices=n_slices
+        )
+
+    elif slice_method == "clusters":
         kmeans = KMeans(n_clusters=n_slices, n_init="auto")
         kmeans.fit(gen_dict["g_test"])
 
@@ -28,8 +33,10 @@ def mandoline_error(gen_dict, n_slices=3, slice_method = 'clusters'):
     log_density_ratios = log_density_ratio(solved.Phi_D_src, solved)
 
     # print smth for max_cov ?
-    return logsumexp(log_density_ratios + gen_dict["err"](gen_dict["g_test"]))- np.log(gen_dict["g_test"].shape[0])
-    
+    return logsumexp(log_density_ratios + gen_dict["err"](gen_dict["g_test"])) - np.log(
+        gen_dict["g_test"].shape[0]
+    )
+
 
 def get_correct(model, X, labels, tolerance=1e-5):
     """

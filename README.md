@@ -11,12 +11,17 @@ estimation were used for reweighteing. In this work we are trying to implement n
 As for example, Mandolince framework, Clip, Regularisation and KL-divergence methods.
 Finally, we will check our estimations on real data and write theoretical part of our experiments.
 
-## Guide for running from parent directory:
+## Guide for running from parent directory with config.yaml setup:
 ```bash
-python3.11 -m plots.max_cov_plot 
+nox -s poetry_run
 ```
 
-For debug mode add flag:
+For full-debug mode add flag:
 ```bash
 hydra.verbose=true
+```
+
+## For linting and formatting and run use:
+```bash
+nox
 ```

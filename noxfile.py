@@ -2,8 +2,10 @@ import nox
 
 locations = "source", "tests", "plots", "noxfile.py"
 
+PYTHON_VERSIONS = ["3.11.4"]
 
-@nox.session(python=["3.11"])
+
+@nox.session(python=PYTHON_VERSIONS)
 def lint(session):
     args = session.posargs or locations
     session.install("flake8")
@@ -16,45 +18,19 @@ def black(session):
     session.run("black", ".")
 
 
-@nox.session(tags=["style", "fix"])
+@nox.session(python=PYTHON_VERSIONS, tags=["style", "fix"])
 def isort(session):
     session.install("isort")
     session.run("isort", ".")
 
 
-@nox.session(tags=["style", "fix"])
+@nox.session(python=PYTHON_VERSIONS, tags=["style", "fix"])
 def pylint(session):
     session.install("pylint")
     session.run("pylint", *locations)
 
 
 @nox.session(python=["3.11"])
-def install_packages(session):
-    packages = [
-        "numpy",
-        "matplotlib",
-        "scipy",
-        "scikit-learn",
-        "tqdm",
-    ]
-    session.install(*packages)
-
-
-all_packages = [
-    "numpy",
-    "matplotlib",
-    "scipy",
-    "scikit-learn",
-    "tqdm",
-]
-
-
-@nox.session(name="setup-env")
-def setup_env(session):
-    session.install(*all_packages)
-
-
-@nox.session(python=["3.11"])
-def install_poetry(session):
-    session.run("pip", "install", "poetry")
-    session.run("poetry", "install")
+def poetry_run(session):
+    session.run("poetry", "install", "--no-root")
+    session.run("poetry", "run", "python", "-m", "plots.max_cov_plot")

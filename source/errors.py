@@ -1,4 +1,7 @@
+import logging
+
 import numpy as np
+import statsmodels.api as sm
 from sklearn.neighbors import KernelDensity
 from tqdm import trange
 
@@ -6,8 +9,7 @@ from tests.metrics import mape, rmse
 from tests.test import test
 
 from .errors_init import errors_init
-
-# from .LSCV import LSCV_KL
+from .LSCV import KL_LSCV_find_bw
 
 
 def errors_test(
@@ -20,8 +22,8 @@ def errors_test(
     sizes,
     kf,
     i,
-    log=None,
 ):
+    log = logging.getLogger("__main__")
 
     gen_dict = {}
     gen_dict["f"] = params["f_gen"]()
@@ -42,7 +44,6 @@ def errors_test(
             p_sample,
             train_idx,
             test_idx,
-            log,
         )
         fill_errors(
             error,
@@ -53,7 +54,6 @@ def errors_test(
             hyperparams_params,
             sizes,
             gen_dict,
-            log,
         )
 
     log.debug(f"\nfinal error (summed for each fold) for one test num_{i}:\n {error}\n")
@@ -62,15 +62,16 @@ def errors_test(
     )
 
     fill_dicts(
-        err_dict, err_hyp_dict, error, error_hyp, params, hyperparams_params, sizes, log
+        err_dict, err_hyp_dict, error, error_hyp, params, hyperparams_params, sizes
     )
 
     return True
 
 
 def fill_gen_dict(
-    gen_dict, params, hyperparams_dict, g_sample, p_sample, train_idx, test_idx, log
+    gen_dict, params, hyperparams_dict, g_sample, p_sample, train_idx, test_idx
 ):
+    log = logging.getLogger("__main__")
     gen_dict["g_train"] = g_sample[train_idx]
     gen_dict["g_test"] = g_sample[test_idx]
     gen_dict["p_test"] = p_sample[test_idx]
@@ -83,17 +84,25 @@ def fill_gen_dict(
 
     kde_list = [
         "ISE_g_estim",
-        "ISE_g_regular",
+        "ISE_g_estim_KL",
+        "ISE_g_reg_uniform",
+        "ISE_g_reg_uniform_KL",
+        "ISE_g_reg_degree",
+        "ISE_g_reg_degree_KL",
         "ISE_g_estim_clip",
+        "ISE_g_estim_clip_KL",
     ]
     if [i for i in params["x"] + params["x_hyp"] + params["y"] if i in kde_list]:
-        if hyperparams_dict["kde_size"][0] == "LSCV":
-            bandwidth = LSCV_KL()
-        else:
-            bandwidth = hyperparams_dict["kde_size"][0]
-        kde_sk = KernelDensity(kernel="gaussian", bandwidth=bandwidth).fit(
-            gen_dict["g_train"]
-        )
+        bw = hyperparams_dict["bandwidth"]
+        if bw == "KL_LSCV":
+            bw = KL_LSCV_find_bw(gen_dict["g_train"], beta=hyperparams_dict["beta"])
+            log.debug(f"current bandwidth for KL_LSCV is: {bw}")
+            hyperparams_dict["bandwidth"] = bw
+
+        kde_sk = KernelDensity(kernel="gaussian", bandwidth=bw).fit(gen_dict["g_train"])
+        if bw == "scott" or bw == "silverman":
+            hyperparams_dict["bandwidth"] = kde_sk.bandwidth_
+            log.debug(f"current for scott/silvername bandwidth is: {bw}")
         gen_dict["g_estim"] = lambda X: kde_sk.score_samples(X)
 
     log.debug(f"\ng_estim : {gen_dict['g_estim']}\n")
@@ -109,8 +118,8 @@ def fill_errors(
     hyperparams_params,
     sizes,
     gen_dict,
-    log,
 ):
+    log = logging.getLogger("__main__")
     # work without hyperparams:
     error_temp = test(
         conf,
@@ -128,7 +137,7 @@ def fill_errors(
     # for hyperparams
     if hyperparams_params["grid_flag"]:
         for j in trange(sizes["max_size"]):
-            hyperparams = {"kde_size": hyperparams_dict["kde_size"][0]}
+            hyperparams = {"kde_size": hyperparams_dict["bandwidth"]}
             x_estim_temp = []
             for x_temp in params["x_hyp"]:
                 if j < sizes[x_temp]:
@@ -158,9 +167,10 @@ def fill_errors(
             gen_dict,
             params["x_hyp"],
             hyperparams={
-                "kde_size": hyperparams_dict["kde_size"][0],
+                "kde_size": hyperparams_dict["bandwidth"],
                 "n_slices": hyperparams_dict["Mandoline"][0],
-                "ISE_g_regular": hyperparams_dict["ISE_g_regular"][0],
+                "ISE_g_reg_uniform": hyperparams_dict["ISE_g_reg_uniform"][0],
+                "ISE_g_reg_degree": hyperparams_dict["ISE_g_reg_degree"][0],
                 "ISE_g_clip": hyperparams_dict["ISE_g_clip"][0],
                 "ISE_g_estim_clip": hyperparams_dict["ISE_g_clip"][0],
                 "Mandoline": hyperparams_dict["Mandoline"][0],
@@ -178,8 +188,10 @@ def fill_errors(
 
 
 def fill_dicts(
-    err_dict, err_hyp_dict, error, error_hyp, params, hyperparams_params, sizes, log
+    err_dict, err_hyp_dict, error, error_hyp, params, hyperparams_params, sizes
 ):
+    log = logging.getLogger("__main__")
+
     for x_temp in params["x"] + params["y"]:
         err_dict[x_temp] += [error[x_temp] / params["n_splits"]]
     log.debug(
@@ -208,15 +220,17 @@ def fill_dicts(
     return True
 
 
-def count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, flag, log):
+def count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, flag):
+    log = logging.getLogger("__main__")
+
     best_hyperparams = {}
     best_metrics_dict = {"mape": {}, "rmse": {}}
 
     y_err = np.array(err_dict[params["y"][0]])
     for x_temp in params["x"]:
         x_err = np.array(err_dict[x_temp])
-        best_metrics_dict["mape"][x_temp] = [mape(x_err, y_err)]
-        best_metrics_dict["rmse"][x_temp] = [rmse(x_err, y_err)]
+        best_metrics_dict["mape"][x_temp] = mape(x_err, y_err)
+        best_metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
 
     metrics_dict = {"mape": {}, "rmse": {}}
     for x_temp in params["x_hyp"]:
@@ -234,19 +248,11 @@ def count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, flag,
                 metrics_dict["mape"][x_temp].index(min(metrics_dict["mape"][x_temp]))
             ]
 
-            best_metrics_dict["mape"][x_temp] = [
-                metrics_dict["mape"][x_temp][
-                    metrics_dict["mape"][x_temp].index(
-                        min(metrics_dict["mape"][x_temp])
-                    )
-                ]
+            best_metrics_dict["mape"][x_temp] = metrics_dict["mape"][x_temp][
+                metrics_dict["mape"][x_temp].index(min(metrics_dict["mape"][x_temp]))
             ]
-            best_metrics_dict["rmse"][x_temp] = [
-                metrics_dict["rmse"][x_temp][
-                    metrics_dict["mape"][x_temp].index(
-                        min(metrics_dict["mape"][x_temp])
-                    )
-                ]
+            best_metrics_dict["rmse"][x_temp] = metrics_dict["rmse"][x_temp][
+                metrics_dict["mape"][x_temp].index(min(metrics_dict["mape"][x_temp]))
             ]
 
         log.info(f"\nbest hyperparams:\n {best_hyperparams}\n")
@@ -254,7 +260,7 @@ def count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, flag,
     else:
         for x_temp in params["x_hyp"]:
             x_err = np.array(err_dict[x_temp])
-            best_metrics_dict["mape"][x_temp] = [mape(x_err, y_err)]
-            best_metrics_dict["rmse"][x_temp] = [rmse(x_err, y_err)]
+            best_metrics_dict["mape"][x_temp] = mape(x_err, y_err)
+            best_metrics_dict["rmse"][x_temp] = rmse(x_err, y_err)
 
     return best_metrics_dict, metrics_dict

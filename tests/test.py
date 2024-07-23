@@ -1,5 +1,9 @@
-from source.estimations import (ISE_clip, importance_sampling_error,
-                                monte_carlo_error)
+from source.estimations import (
+    ISE_clip,
+    importance_sampling_error,
+    importance_sampling_error_degree,
+    monte_carlo_error,
+)
 from source.mandoline_estimation import mandoline_error
 
 
@@ -8,13 +12,7 @@ def test(
     hyperparams_params,
     gen_dict,
     target_error,
-    hyperparams={
-        "kde_size": 5,
-        "n_slices": 3,
-        "ISE_g_regular": 0,
-        "ISE_g_clip": 0,
-        "ISE_g_estim_clip": 0,
-    },
+    hyperparams={},
 ):
     iter_err = dict()
 
@@ -40,17 +38,26 @@ def test(
             gen_dict["g_test"],
         )
 
-    if "ISE_g_regular" in target_error:
-        epsilon = hyperparams["ISE_g_regular"]
+    if "ISE_g_reg_uniform" in target_error:
+        epsilon = hyperparams["ISE_g_reg_uniform"]
         g_estim_new = lambda X: (1 - epsilon) * gen_dict["g_estim"](X) + epsilon / (
             conf["max_mu"] ** 2
         )
 
-        iter_err["ISE_g_regular"] = importance_sampling_error(
+        iter_err["ISE_g_reg_uniform"] = importance_sampling_error(
             gen_dict["err"],
             gen_dict["p"],
             g_estim_new,
             gen_dict["g_test"],
+        )
+
+    if "ISE_g_reg_degree" in target_error:
+        iter_err["ISE_g_reg_degree"] = importance_sampling_error_degree(
+            gen_dict["err"],
+            gen_dict["p"],
+            gen_dict["g_estim"],
+            gen_dict["g_test"],
+            hyperparams["ISE_g_reg_degree"],
         )
 
     if "ISE_g_clip" in target_error:

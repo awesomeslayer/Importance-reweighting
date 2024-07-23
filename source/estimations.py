@@ -10,6 +10,15 @@ def importance_sampling_error(err, p, g, g_sample):
     )
 
 
+def importance_sampling_error_degree(err, p, g, g_sample, lam):
+    if lam != 0:
+        return logsumexp(err(g_sample) + lam * (p(g_sample) - g(g_sample))) - np.log(
+            g_sample.shape[0]
+        )
+    else:
+        return logsumexp(err(g_sample)) - np.log(g_sample.shape[0])
+
+
 def monte_carlo_error(err, p_sample):
     """
     :param err: log-error function
