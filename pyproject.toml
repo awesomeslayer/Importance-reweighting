@@ -1,16 +1,23 @@
 [tool.poetry]
-name = "LARSS IS"
-version = "0.1.0"
-description = ""
-authors = ["MOST HATED"]
+name = "Spatial_Errors"
+version = "0.2.0"
+description = "task for LARSS"
+authors = ["mosthated"]
+homepage = "https://github.com/awesomeslayer/Spatial_Errors"
+repository = "https://github.com/awesomeslayer/Spatial_Errors"
+readme = "README.md"
+keywords = ["Risk estimation", "Importance Sampling"]
 
 [tool.poetry.dependencies]
-python = "^3.11"
-numpy = "*"
-matplotlib = "*"
-scipy = "*"
-scikit-learn = "*"
-tqdm = "*"
+python = "3.11.4"
+tqdm = "^4.66.4"
+statsmodels = "^0.14.2"
+scikit-learn = "^1.5.1"
+omegaconf = "^2.3.0"
+matplotlib = "^3.9.1"
+gpy = "^1.13.2"
+hydra-core = "^1.3.2"
+
 
 [build-system]
 requires = ["poetry-core"]

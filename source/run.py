@@ -1,3 +1,4 @@
+import logging
 from copy import copy
 from functools import partial
 
@@ -19,14 +20,10 @@ def run(
     conf,
     params,
     hyperparams_params,
-    hyperparams_dict={
-        "Mandoline": [3, 6, 9, 15, 17, 20, 25, 30],
-        "ISE_g_regular": [0],
-        "ISE_g_clip": [0],
-        "ISE_g_estim_clip": [0],
-    },
-    log=None,
+    hyperparams_dict,
 ):
+    log = logging.getLogger("__main__")
+
     f_gens = {
         "linear": partial(random_linear_func, conf),
         "GMM": partial(random_gaussian_mixture_func, conf),
@@ -68,7 +65,8 @@ def run(
             if step != 0:
                 params_temp["x"] = list(set(params["x"]) & set(["ISE_g_estim"]))
                 params_temp["x_hyp"] = list(
-                    set(params["x_hyp"]) & set(["ISE_g_estim_clip", "ISE_g_regular"])
+                    set(params["x_hyp"])
+                    & set(["ISE_g_estim_clip", "ISE_g_reg_uniform", "ISE_g_reg_degree"])
                 )
             step = step + 1
         else:
@@ -76,8 +74,9 @@ def run(
             params_temp["x"] = []
             params_temp["x_hyp"] = [
                 "ISE_g_estim_clip_KL",
-                "ISE_g_regular_KL",
+                "ISE_g_reg_uniform_KL",
                 "ISE_g_estim_KL",
+                "ISE_g_reg_degree_KL",
             ]
             for x_temp in params_temp["x_hyp"]:
                 best_metrics_dict["mape"][x_temp] = []
@@ -107,7 +106,6 @@ def run(
                 sizes,
                 kf,
                 i,
-                log,
             )
 
         bw_list += [hyperparams_dict["bandwidth"]]
@@ -119,7 +117,6 @@ def run(
             err_hyp_dict,
             err_dict,
             hyperparams_params["grid_flag"],
-            log,
         )
         for x_temp in params_temp["x"] + params_temp["x_hyp"]:
             best_metrics_dict["mape"][x_temp] += [extr_metrics_dict["mape"][x_temp]]

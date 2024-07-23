@@ -6,24 +6,25 @@ conf:
   n_GP_components : 5
 
 hyperparams_dict:
-  Mandoline : [3, 6]
-  ISE_g_regular : [0, 0.002]
-  ISE_g_clip : [0, 0.05]
-  ISE_g_estim_clip : [0, 0.05]
+  Mandoline : [2, 7, 13, 16, 19, 22, 26, 27, 30, 33, 35]
+  ISE_g_reg_uniform : [0]
+  ISE_g_reg_degree : [0, 0.022]
+  ISE_g_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
+  ISE_g_estim_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
   
 params:
-  max_cov_list : [1, 20]  
+  max_cov_list : [1, 15, 30, 45, 70, 100, 125, 150]  
   x : ["MCE_g", "ISE_g", "ISE_g_estim"]
-  x_hyp: ["ISE_g_regular", "ISE_g_clip", "ISE_g_estim_clip", "Mandoline"]
+  x_hyp: ["ISE_g_reg_uniform", "ISE_g_reg_degree", "ISE_g_clip", "ISE_g_estim_clip", "Mandoline"]
   y : ["MCE_p"]
-  n_tests : 2
+  n_tests : 15
   f : "linear"
   model : "linear" 
   n_splits : 1
   log_flag : False
 
 hyperparams_params:
-  bw_list : [5, 9]
+  bw_list : [9]
   beta : 0
   grid_flag : True
   smooth_flag : True

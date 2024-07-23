@@ -1,7 +1,9 @@
+import logging
+
 import numpy as np
+import statsmodels.api as sm
 from sklearn.neighbors import KernelDensity
 from tqdm import trange
-import statsmodels.api as sm 
 
 from tests.metrics import mape, rmse
 from tests.test import test
@@ -20,8 +22,8 @@ def errors_test(
     sizes,
     kf,
     i,
-    log=None,
 ):
+    log = logging.getLogger("__main__")
 
     gen_dict = {}
     gen_dict["f"] = params["f_gen"]()
@@ -42,7 +44,6 @@ def errors_test(
             p_sample,
             train_idx,
             test_idx,
-            log,
         )
         fill_errors(
             error,
@@ -53,7 +54,6 @@ def errors_test(
             hyperparams_params,
             sizes,
             gen_dict,
-            log,
         )
 
     log.debug(f"\nfinal error (summed for each fold) for one test num_{i}:\n {error}\n")
@@ -62,15 +62,16 @@ def errors_test(
     )
 
     fill_dicts(
-        err_dict, err_hyp_dict, error, error_hyp, params, hyperparams_params, sizes, log
+        err_dict, err_hyp_dict, error, error_hyp, params, hyperparams_params, sizes
     )
 
     return True
 
 
 def fill_gen_dict(
-    gen_dict, params, hyperparams_dict, g_sample, p_sample, train_idx, test_idx, log
+    gen_dict, params, hyperparams_dict, g_sample, p_sample, train_idx, test_idx
 ):
+    log = logging.getLogger("__main__")
     gen_dict["g_train"] = g_sample[train_idx]
     gen_dict["g_test"] = g_sample[test_idx]
     gen_dict["p_test"] = p_sample[test_idx]
@@ -83,20 +84,20 @@ def fill_gen_dict(
 
     kde_list = [
         "ISE_g_estim",
-        "ISE_g_regular",
+        "ISE_g_reg_uniform",
+        "ISE_g_reg_degree",
         "ISE_g_estim_clip",
     ]
     if [i for i in params["x"] + params["x_hyp"] + params["y"] if i in kde_list]:
         bw = hyperparams_dict["bandwidth"]
         if bw == "KL_LSCV":
-            bw = KL_LSCV_find_bw(gen_dict['g_train'], beta = hyperparams_dict["beta"])
+            bw = KL_LSCV_find_bw(gen_dict["g_train"], beta=hyperparams_dict["beta"])
             log.debug(f"current bandwidth for KL_LSCV is: {bw}")
 
-            #if(hyperparams_dict["beta"] == 0):
+            # if(hyperparams_dict["beta"] == 0):
             #    dens_u = sm.nonparametric.KDEMultivariate(data=gen_dict['g_train'], var_type='cc', bw='cv_ls')
             #    print(f"best lib bw's:{dens_u.bw}")
             #    print(f"our lsvc beta = 0 bw: {bw}")
-                    
 
         kde_sk = KernelDensity(kernel="gaussian", bandwidth=bw).fit(gen_dict["g_train"])
         if bw == "scott" or bw == "silverman":
@@ -117,8 +118,8 @@ def fill_errors(
     hyperparams_params,
     sizes,
     gen_dict,
-    log,
 ):
+    log = logging.getLogger("__main__")
     # work without hyperparams:
     error_temp = test(
         conf,
@@ -168,7 +169,8 @@ def fill_errors(
             hyperparams={
                 "kde_size": hyperparams_dict["bandwidth"],
                 "n_slices": hyperparams_dict["Mandoline"][0],
-                "ISE_g_regular": hyperparams_dict["ISE_g_regular"][0],
+                "ISE_g_reg_uniform": hyperparams_dict["ISE_g_reg_uniform"][0],
+                "ISE_g_reg_degree": hyperparams_dict["ISE_g_reg_degree"][0],
                 "ISE_g_clip": hyperparams_dict["ISE_g_clip"][0],
                 "ISE_g_estim_clip": hyperparams_dict["ISE_g_clip"][0],
                 "Mandoline": hyperparams_dict["Mandoline"][0],
@@ -186,8 +188,10 @@ def fill_errors(
 
 
 def fill_dicts(
-    err_dict, err_hyp_dict, error, error_hyp, params, hyperparams_params, sizes, log
+    err_dict, err_hyp_dict, error, error_hyp, params, hyperparams_params, sizes
 ):
+    log = logging.getLogger("__main__")
+
     for x_temp in params["x"] + params["y"]:
         err_dict[x_temp] += [error[x_temp] / params["n_splits"]]
     log.debug(
@@ -216,7 +220,9 @@ def fill_dicts(
     return True
 
 
-def count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, flag, log):
+def count_metrics(params, hyperparams_dict, sizes, err_hyp_dict, err_dict, flag):
+    log = logging.getLogger("__main__")
+
     best_hyperparams = {}
     best_metrics_dict = {"mape": {}, "rmse": {}}
 
