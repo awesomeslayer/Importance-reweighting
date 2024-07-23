@@ -1,7 +1,6 @@
-import logging
 from copy import copy
 from functools import partial
-
+import logging
 import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import KFold, ShuffleSplit
@@ -11,9 +10,14 @@ from plots.param_plots import bw_plot, extr_plots
 
 from .errors import count_metrics, errors_test
 from .errors_init import errors_init, find_sizes
-from .simulation import (DummyModel, random_gaussian_mixture_func,
-                         random_GMM_samples, random_GP_func,
-                         random_linear_func, random_uniform_samples)
+from .simulation import (
+    DummyModel,
+    random_gaussian_mixture_func,
+    random_GMM_samples,
+    random_GP_func,
+    random_linear_func,
+    random_uniform_samples,
+)
 
 
 def run(

@@ -28,8 +28,6 @@ def max_cov_plot(cfg: DictConfig):
     for x in methods_list:
         errors_plot[x] = []
 
-    hyperparams_dict["ISE_g_reg_degree"] = [1 / 10**i for i in range(10)] + [0]
-    hyperparams_dict["ISE_g_reg_uniform"] = [1 / 10**i for i in range(11)]
     log.info(f"\nparams: {params}\n")
     log.info(f"\nconfig: {conf}\n")
     log.info(f"\nhyperparams_dict; {hyperparams_dict}\n")

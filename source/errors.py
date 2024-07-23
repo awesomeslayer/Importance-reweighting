@@ -84,20 +84,20 @@ def fill_gen_dict(
 
     kde_list = [
         "ISE_g_estim",
+        "ISE_g_estim_KL",
         "ISE_g_reg_uniform",
+        "ISE_g_reg_uniform_KL",
         "ISE_g_reg_degree",
+        "ISE_g_reg_degree_KL",
         "ISE_g_estim_clip",
+        "ISE_g_estim_clip_KL",
     ]
     if [i for i in params["x"] + params["x_hyp"] + params["y"] if i in kde_list]:
         bw = hyperparams_dict["bandwidth"]
         if bw == "KL_LSCV":
             bw = KL_LSCV_find_bw(gen_dict["g_train"], beta=hyperparams_dict["beta"])
             log.debug(f"current bandwidth for KL_LSCV is: {bw}")
-
-            # if(hyperparams_dict["beta"] == 0):
-            #    dens_u = sm.nonparametric.KDEMultivariate(data=gen_dict['g_train'], var_type='cc', bw='cv_ls')
-            #    print(f"best lib bw's:{dens_u.bw}")
-            #    print(f"our lsvc beta = 0 bw: {bw}")
+            hyperparams_dict["bandwidth"] = bw
 
         kde_sk = KernelDensity(kernel="gaussian", bandwidth=bw).fit(gen_dict["g_train"])
         if bw == "scott" or bw == "silverman":

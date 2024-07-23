@@ -1,6 +1,9 @@
-from source.estimations import (ISE_clip, importance_sampling_error,
-                                importance_sampling_error_degree,
-                                monte_carlo_error)
+from source.estimations import (
+    ISE_clip,
+    importance_sampling_error,
+    importance_sampling_error_degree,
+    monte_carlo_error,
+)
 from source.mandoline_estimation import mandoline_error
 
 
@@ -52,7 +55,7 @@ def test(
         iter_err["ISE_g_reg_degree"] = importance_sampling_error_degree(
             gen_dict["err"],
             gen_dict["p"],
-            g_estim_new,
+            gen_dict["g_estim"],
             gen_dict["g_test"],
             hyperparams["ISE_g_reg_degree"],
         )

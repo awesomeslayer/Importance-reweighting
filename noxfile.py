@@ -4,6 +4,7 @@ locations = "source", "tests", "plots", "noxfile.py"
 
 PYTHON_VERSIONS = ["3.11.4"]
 
+
 @nox.session(python=PYTHON_VERSIONS)
 def lint(session):
     args = session.posargs or locations
@@ -27,6 +28,7 @@ def isort(session):
 def pylint(session):
     session.install("pylint")
     session.run("pylint", *locations)
+
 
 @nox.session(python=["3.11"])
 def poetry_run(session):
