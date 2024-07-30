@@ -18,6 +18,8 @@ def extr_plots(conf, params, metrics_hyp_dict, hyperparams_dict, bw):
         ax.set_ylabel("mape", fontsize=26)
         if params["log_flag"]:
             ax.set_xscale("log")
+        if x_temp == 'ISE_g_estim_KL':
+            ax.set_xscale("log")
         plt.savefig(
             f"./plots/results/extr_plots/{params['model']}_{params['f']}_{x_temp}_{conf['max_cov']}_bw{bw}.pdf"
         )

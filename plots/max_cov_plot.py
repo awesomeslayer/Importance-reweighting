@@ -85,6 +85,6 @@ def max_cov_plot(cfg: DictConfig):
 
 
 log = logging.getLogger("__main__")
-# log.setLevel(logging.DEBUG) uncomment for debug logs
+log.setLevel(logging.DEBUG)
 if __name__ == "__main__":
     max_cov_plot()
