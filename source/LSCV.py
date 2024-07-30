@@ -1,53 +1,54 @@
 import numpy as np
 import statsmodels.api as sm  # for library lscv, beta = 0
-from scipy.integrate import dblquad  # for integrating (longer)
+import logging
+from scipy.integrate import dblquad
 from scipy.optimize import minimize
 from sklearn.neighbors import KernelDensity
 
-
-def monte_carlo_integration(f, num_samples=10000):
-    x_samples = np.random.normal(0, 1, num_samples)
-    y_samples = np.random.normal(0, 1, num_samples)
-
-    evaluations = np.array([f(x, y) for x, y in zip(x_samples, y_samples)])
-    integral_estimate = np.mean(evaluations)
-
-    return integral_estimate
+log = logging.getLogger("__main__")
 
 
-def squared_error_sklearn(h, sample):
+def u_mean(log_f_n, p_sample):
+    return np.sum(log_f_n(p_sample))
+
+
+def squared_error_sklearn(h, conf, g_sample, p_sample, beta):
     h = h[0]
-    kde = KernelDensity(kernel="gaussian", bandwidth=h).fit(sample)
-    f_n_square = lambda x, y: (np.exp(kde.score_samples(np.array([[x, y]])))) ** 2
+    kde = KernelDensity(kernel="gaussian", bandwidth=h).fit(g_sample)
+    f_n_squared = lambda x, y: (np.exp(kde.score_samples(np.array([[x, y]])))) ** 2
+    log_f_n = lambda X: (kde.score_samples(X))
 
-    # Compute the mean of cross prediction value
     def f_sub_sample_mean():
         summation = 0
-        for i in range(len(sample)):
-            subsample = np.delete(sample, i, axis=0)
+        for i in range(len(g_sample)):
+            subsample = np.delete(g_sample, i, axis=0)
 
             kde = KernelDensity(kernel="gaussian", bandwidth=h).fit(subsample)
-            predict_value = np.exp(kde.score_samples(sample[i].reshape(1, -1)))
+            predict_value = np.exp(kde.score_samples(g_sample[i].reshape(1, -1)))
             summation += predict_value
-        return summation / len(sample)
+        return summation / len(g_sample)
 
-    integral = monte_carlo_integration(f_n_square)
-    # print(f"integral : {integral}")
-    cv = abs(integral - 2 * f_sub_sample_mean())
-    print(f"cv : {cv}")
+    integral = dblquad(f_n_squared, 0, conf["max_mu"], 0, conf["max_mu"])
+    uniform_sum = u_mean(log_f_n, p_sample)
+    sub = f_sub_sample_mean()
+    cv = integral[0] - 2 * sub - beta * uniform_sum
+    log.debug(
+        f"integral = {integral}, subsample = {sub}, uniform_sum = {uniform_sum}, cv = {cv}"
+    )
     return cv
 
 
-# Find the optimal bandwidth h minimizing cv and return it
-def KL_LSCV_find_bw(sample, beta=0):
-    h0 = np.array(sample).std() * (len(sample) ** (-0.2))
+def KL_LSCV_find_bw(conf, g_sample, p_sample, beta=0):
+    h0 = np.array(g_sample).std() * (len(g_sample) ** (-0.2))
 
-    # print(f"Initial h0: {h0}")
-
-    # Constraint to ensure h is larger than 10**(-8)
+    log.debug(f"Initial h0: {h0}")
     cons = {"type": "ineq", "fun": lambda x: x[0] - 10 ** (-8)}
 
-    res = minimize(squared_error_sklearn, h0, args=(sample), constraints=cons)
-    h = res.x  # The optimal h
+    h = minimize(
+        squared_error_sklearn,
+        h0,
+        args=(conf, g_sample, p_sample, beta),
+        constraints=cons,
+    ).x
 
     return h[0]

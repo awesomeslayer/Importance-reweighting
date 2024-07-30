@@ -47,11 +47,6 @@ def run(
         else ShuffleSplit(n_splits=1, test_size=0.3, random_state=0)
     )
 
-    # get sizes for hyperparams_search
-    sizes = find_sizes(params, hyperparams_dict)
-    log.debug(f"\n sizes = {sizes}\n")
-    # init errors dictionaries
-
     best_metrics_dict = {"mape": {}, "rmse": {}}
     for x_temp in params["x"] + params["x_hyp"]:
         best_metrics_dict["mape"][x_temp] = []
@@ -61,11 +56,14 @@ def run(
 
     bw_list = []
     for bw in hyperparams_params["bw_list"]:
+        log.debug(f"\ncurrent bandwidth = {bw}\n")
         params_temp = copy(params)
         extr_metrics_dict = {}
 
         step = 0
         if bw != "KL_LSCV":
+            hyperparams_dict_temp = copy(hyperparams_dict)
+
             if step != 0:
                 params_temp["x"] = list(set(params["x"]) & set(["ISE_g_estim"]))
                 params_temp["x_hyp"] = list(
@@ -75,17 +73,22 @@ def run(
             step = step + 1
         else:
             step = 0
+            hyperparams_dict_temp = {"ISE_g_estim_KL": hyperparams_params["beta_list"]}
+
             params_temp["x"] = []
             params_temp["x_hyp"] = [
-                "ISE_g_estim_clip_KL",
-                "ISE_g_reg_uniform_KL",
                 "ISE_g_estim_KL",
-                "ISE_g_reg_degree_KL",
             ]
-            for x_temp in params_temp["x_hyp"]:
-                best_metrics_dict["mape"][x_temp] = []
-                best_metrics_dict["rmse"][x_temp] = []
-            log.debug(f"best_metrics_dict with KL init: {best_metrics_dict}")
+            best_metrics_dict["mape"]["ISE_g_estim_KL"] = []
+            best_metrics_dict["rmse"]["ISE_g_estim_KL"] = []
+            log.debug(f"\nbest_metrics_dict with KL init: {best_metrics_dict}\n")
+
+        hyperparams_dict_temp["bandwidth"] = bw
+        log.debug(f"\nparams_temp = {params_temp}\n")
+        log.debug(f"\nhyperparams_dict_temp = {hyperparams_dict_temp}\n")
+
+        sizes = find_sizes(params_temp, hyperparams_dict_temp)
+        log.debug(f"\n temp_sizes = {sizes}\n")
 
         err_dict, err_hyp_dict = errors_init(
             params_temp, sizes, list(), hyperparams_params["grid_flag"]
@@ -95,46 +98,47 @@ def run(
         log.debug(f"\nerr_hyp_dict init for bw={bw} : {err_hyp_dict}\n")
 
         # test all methods, get errors dictionaries (for each method and each param on same generations (same folds) for each tests)
-        hyperparams_dict["bandwidth"] = bw
-        hyperparams_dict["beta"] = hyperparams_params[
-            "beta"
-        ]  # in future may be plots for betas, and edit for list...
+
+        # in future may be plots for betas, and edit for list...
         for i in trange(params_temp["n_tests"]):
             errors_test(
                 err_dict,
                 err_hyp_dict,
                 conf,
                 params_temp,
-                hyperparams_dict,
+                hyperparams_dict_temp,
                 hyperparams_params,
                 sizes,
                 kf,
                 i,
             )
 
-        bw_list += [hyperparams_dict["bandwidth"]]
         # if needed find best hyperparams and get best_mape/rmse dictionaries with them
         extr_metrics_dict, metrics_dict = count_metrics(
             params_temp,
-            hyperparams_dict,
+            hyperparams_dict_temp,
             sizes,
             err_hyp_dict,
             err_dict,
             hyperparams_params["grid_flag"],
         )
+
+        if bw != "KL_LSCV":
+            bw_list += [hyperparams_dict_temp["bandwidth"]]
+
         for x_temp in params_temp["x"] + params_temp["x_hyp"]:
             best_metrics_dict["mape"][x_temp] += [extr_metrics_dict["mape"][x_temp]]
             best_metrics_dict["rmse"][x_temp] += [extr_metrics_dict["rmse"][x_temp]]
 
         if hyperparams_params["grid_flag"]:
-            extr_plots(conf, params_temp, metrics_dict, hyperparams_dict, bw)
+            extr_plots(conf, params_temp, metrics_dict, hyperparams_dict_temp, bw)
         log.info(
             f"\n for bw = {bw} extr_metrics_dict for max_cov {conf['max_cov']}= \n{extr_metrics_dict}\n"
         )
 
-    log.debug(f"best_metrics_dict lists for bw: {best_metrics_dict}")
+    log.debug(f"\nbest_metrics_dict lists for bw: {best_metrics_dict}\n")
 
     best_metrics_dict = bw_plot(conf, params, bw_list, best_metrics_dict)
-    log.debug(f"best_metrics_dict minimums for bw : {best_metrics_dict}")
+    log.debug(f"\nbest_metrics_dict minimums for bw : {best_metrics_dict}\n")
 
     return best_metrics_dict

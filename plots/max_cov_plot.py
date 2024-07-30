@@ -1,5 +1,4 @@
 import logging
-
 import hydra
 import matplotlib.pyplot as plt
 import tqdm
@@ -15,17 +14,24 @@ def max_cov_plot(cfg: DictConfig):
     hyperparams_params = OmegaConf.to_container(cfg["hyperparams_params"])
     conf = OmegaConf.to_container(cfg["conf"])
 
-    methods_list = params["x"] + params["x_hyp"]
+    method_list_all = params["x"] + params["x_hyp"]
+    method_list_estim = [
+        s for s in method_list_all if "estim" in s or "reg" in s or "MCE" in s
+    ]
+    method_list_no_estim = [
+        s for s in method_list_all if s not in method_list_estim or s == "MCE_g"
+    ]
+
     if "KL_LSCV" in hyperparams_params["bw_list"]:
-        methods_list += [
+        method_list_all += [
             "ISE_g_estim_KL",
-            "ISE_g_reg_uniform_KL",
-            "ISE_g_estim_clip_KL",
-            "ISE_g_reg_degree_KL",
+        ]
+        method_list_estim += [
+            "ISE_g_estim_KL",
         ]
 
     errors_plot = {}
-    for x in methods_list:
+    for x in method_list_all:
         errors_plot[x] = []
 
     log.info(f"\nparams: {params}\n")
@@ -41,57 +47,44 @@ def max_cov_plot(cfg: DictConfig):
 
         log.info(f"\nmape's and rmse's for max_cov={max_cov}:\n {elem}\n")
 
-        for x_temp in methods_list:
+        for x_temp in method_list_all:
             errors_plot[x_temp] += [elem["mape"][x_temp]]
 
     fig, ax = plt.subplots(figsize=(12, 12))
-    for x_temp in ["MCE_g", "ISE_g", "ISE_g_clip", "Mandoline"]:
+    for x_temp in method_list_estim:
         ax.plot(params["max_cov_list"], errors_plot[x_temp], label=f"{x_temp}")
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("errors", fontsize=26)
-    # ax.set_xscale("log")
-    plt.savefig(
-        f"./plots/results/max_cov_plots/{params['model']}_{params['f']}_max_cov_emp.pdf"
-    )
-    plt.tight_layout()
-    # plt.show()
-
-    fig, ax = plt.subplots(figsize=(12, 12))
-    for x_temp in [
-        "MCE_g",
-        "ISE_g_estim",
-        "ISE_g_reg_uniform",
-        "ISE_g_reg_degree",
-        "ISE_g_estim_clip",
-        "Mandoline",
-    ]:
-        ax.plot(params["max_cov_list"], errors_plot[x_temp], label=f"{x_temp}")
-    plt.legend(fontsize=26)
-    ax.set_xlabel("max_cov", fontsize=26)
-    ax.set_ylabel("errors", fontsize=26)
-    # ax.set_xscale("log")
     plt.savefig(
         f"./plots/results/max_cov_plots/{params['model']}_{params['f']}_max_cov_estim.pdf"
     )
     plt.tight_layout()
-    # plt.show()
 
     fig, ax = plt.subplots(figsize=(12, 12))
-    for x_temp in methods_list:
+    for x_temp in method_list_no_estim:
         ax.plot(params["max_cov_list"], errors_plot[x_temp], label=f"{x_temp}")
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("errors", fontsize=26)
-    # ax.set_xscale("log")
+    plt.savefig(
+        f"./plots/results/max_cov_plots/{params['model']}_{params['f']}_max_cov_estim.pdf"
+    )
+    plt.tight_layout()
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for x_temp in method_list_all:
+        ax.plot(params["max_cov_list"], errors_plot[x_temp], label=f"{x_temp}")
+    plt.legend(fontsize=26)
+    ax.set_xlabel("max_cov", fontsize=26)
+    ax.set_ylabel("errors", fontsize=26)
     plt.savefig(
         f"./plots/results/max_cov_plots/{params['model']}_{params['f']}_max_cov.pdf"
     )
     plt.tight_layout()
-    # plt.show()
 
 
 log = logging.getLogger("__main__")
-log.setLevel(logging.DEBUG)
+# log.setLevel(logging.DEBUG) uncomment for debug logs
 if __name__ == "__main__":
     max_cov_plot()
