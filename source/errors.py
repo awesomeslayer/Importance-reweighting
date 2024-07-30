@@ -86,26 +86,22 @@ def fill_gen_dict(
         "ISE_g_estim",
         "ISE_g_estim_KL",
         "ISE_g_reg_uniform",
-        "ISE_g_reg_uniform_KL",
         "ISE_g_reg_degree",
-        "ISE_g_reg_degree_KL",
         "ISE_g_estim_clip",
-        "ISE_g_estim_clip_KL",
     ]
-    if [i for i in params["x"] + params["x_hyp"] + params["y"] if i in kde_list]:
-        bw = hyperparams_dict["bandwidth"]
-        if bw == "KL_LSCV":
-            bw = KL_LSCV_find_bw(gen_dict["g_train"], beta=hyperparams_dict["beta"])
-            log.debug(f"current bandwidth for KL_LSCV is: {bw}")
-            hyperparams_dict["bandwidth"] = bw
 
+    bw = hyperparams_dict["bandwidth"]
+    if [
+        i for i in params["x"] + params["x_hyp"] + params["y"] if i in kde_list
+    ] and bw != "KL_LSCV":
         kde_sk = KernelDensity(kernel="gaussian", bandwidth=bw).fit(gen_dict["g_train"])
+
         if bw == "scott" or bw == "silverman":
             hyperparams_dict["bandwidth"] = kde_sk.bandwidth_
             log.debug(f"current for scott/silvername bandwidth is: {bw}")
         gen_dict["g_estim"] = lambda X: kde_sk.score_samples(X)
 
-    log.debug(f"\ng_estim : {gen_dict['g_estim']}\n")
+        log.debug(f"\ng_estim : {gen_dict['g_estim']}\n")
     return True
 
 
@@ -136,6 +132,7 @@ def fill_errors(
 
     # for hyperparams
     if hyperparams_params["grid_flag"]:
+        bw_list = []
         for j in trange(sizes["max_size"]):
             hyperparams = {"kde_size": hyperparams_dict["bandwidth"]}
             x_estim_temp = []
@@ -143,6 +140,22 @@ def fill_errors(
                 if j < sizes[x_temp]:
                     hyperparams[x_temp] = hyperparams_dict[x_temp][j]
                     x_estim_temp += [x_temp]
+
+            if hyperparams_dict["bandwidth"] == "KL_LSCV":
+                bw = KL_LSCV_find_bw(
+                    conf,
+                    gen_dict["g_train"],
+                    gen_dict["p_test"],
+                    beta=hyperparams["ISE_g_estim_KL"],
+                )
+                log.debug(
+                    f"\ncurrent bandwidth for KL_LSCV with beta = {hyperparams['ISE_g_estim_KL']} is: {bw}\n"
+                )
+
+                kde_sk = KernelDensity(kernel="gaussian", bandwidth=bw).fit(
+                    gen_dict["g_train"]
+                )
+                gen_dict["g_estim"] = lambda X: kde_sk.score_samples(X)
 
             error_hyp_temp = test(
                 conf,
@@ -156,24 +169,37 @@ def fill_errors(
                 error_hyp[x_temp][j] = error_hyp[x_temp][j] + np.exp(
                     error_hyp_temp[x_temp]
                 )
+
         log.debug(
             f"\ncurrent error for one test (sum for folds) with hyperparams:\n {error_hyp}\n"
         )
+
     else:
-        log.debug("\ngrid flag is off, no hyp-search:\n")
+        log.debug(f"\ngrid flag is off, no hyp-search:\n")
+
+        if hyperparams_dict["bandwidth"] == "KL_LSCV":
+            bw = KL_LSCV_find_bw(
+                gen_dict["g_train"], beta=hyperparams["ISE_g_estim_KL"]
+            )
+            log.debug(
+                f"\ncurrent bandwidth for KL_LSCV with beta = {hyperparams['ISE_g_estim_KL']} is: {bw}\n"
+            )
+
+            kde_sk = KernelDensity(kernel="gaussian", bandwidth=bw).fit(
+                gen_dict["g_train"]
+            )
+            gen_dict["g_estim"] = lambda X: kde_sk.score_samples(X)
+
         error_hyp_temp = test(
             conf,
             hyperparams_params,
             gen_dict,
             params["x_hyp"],
             hyperparams={
-                "kde_size": hyperparams_dict["bandwidth"],
-                "n_slices": hyperparams_dict["Mandoline"][0],
                 "ISE_g_reg_uniform": hyperparams_dict["ISE_g_reg_uniform"][0],
                 "ISE_g_reg_degree": hyperparams_dict["ISE_g_reg_degree"][0],
                 "ISE_g_clip": hyperparams_dict["ISE_g_clip"][0],
                 "ISE_g_estim_clip": hyperparams_dict["ISE_g_clip"][0],
-                "Mandoline": hyperparams_dict["Mandoline"][0],
             },
         )
 
@@ -210,7 +236,7 @@ def fill_dicts(
         )
 
     else:
-        log.debug("\n without grid-search:\n")
+        log.debug(f"\n without grid-search:\n")
         for x_temp in params["x_hyp"]:
             err_dict[x_temp] += [error[x_temp] / params["n_splits"]]
         log.debug(
