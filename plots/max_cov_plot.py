@@ -49,7 +49,7 @@ def max_cov_plot(cfg: DictConfig):
 
         for x_temp in method_list_all:
             errors_plot[x_temp] += [elem["mape"][x_temp]]
-
+    log.info(f"\nfor max_cov_list = {params['max_cov_list']}:\nerrors_plot =\n {errors_plot}\n")
     fig, ax = plt.subplots(figsize=(12, 12))
     for x_temp in method_list_estim:
         ax.plot(params["max_cov_list"], errors_plot[x_temp], label=f"{x_temp}")
@@ -68,7 +68,7 @@ def max_cov_plot(cfg: DictConfig):
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("errors", fontsize=26)
     plt.savefig(
-        f"./plots/results/max_cov_plots/{params['model']}_{params['f']}_max_cov_estim.pdf"
+        f"./plots/results/max_cov_plots/{params['model']}_{params['f']}_max_cov_no_estim.pdf"
     )
     plt.tight_layout()
 

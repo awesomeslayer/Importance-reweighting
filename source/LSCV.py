@@ -9,7 +9,7 @@ log = logging.getLogger("__main__")
 
 
 def u_mean(log_f_n, p_sample):
-    return np.sum(log_f_n(p_sample))
+    return np.mean(log_f_n(p_sample))
 
 
 def squared_error_sklearn(h, conf, g_sample, p_sample, beta):

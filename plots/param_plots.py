@@ -12,16 +12,14 @@ def extr_plots(conf, params, metrics_hyp_dict, hyperparams_dict, bw):
         )
         plt.legend(fontsize=26)
         plt.title(
-            f"max_cov{conf['max_cov']}_gens_{params['model']}_{params['f']}_bw{bw}"
+            f"max_cov{conf['max_cov']}_bw{bw}"
         )
         ax.set_xlabel(f"param for {x_temp}", fontsize=26)
         ax.set_ylabel("mape", fontsize=26)
         if params["log_flag"]:
             ax.set_xscale("log")
-        if x_temp == 'ISE_g_estim_KL':
-            ax.set_xscale("log")
         plt.savefig(
-            f"./plots/results/extr_plots/{params['model']}_{params['f']}_{x_temp}_{conf['max_cov']}_bw{bw}.pdf"
+            f"./plots/results/extr_plots/{params['model']}_{params['f']}/{x_temp}_{conf['max_cov']}_bw{bw}.pdf"
         )
         plt.tight_layout()
         # plt.show()
@@ -43,12 +41,12 @@ def bw_plot(conf, params, bw_list, best_metrics_dict):
 
         plt.legend(fontsize=26)
         plt.title(
-            f"max_cov{conf['max_cov']}_gens_{params['model']}_max_cov{conf['max_cov']}."
+            f"max_cov{conf['max_cov']}."
         )
         ax.set_xlabel(f"bandwidth", fontsize=26)
         ax.set_ylabel("mape", fontsize=26)
         plt.savefig(
-            f"./plots/results/bw_plots/{params['model']}_{params['f']}_max_cov{conf['max_cov']}.pdf"
+            f"./plots/results/bw_plots/{params['model']}_{params['f']}/max_cov{conf['max_cov']}.pdf"
         )
         plt.tight_layout()
         # plt.show()
