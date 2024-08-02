@@ -164,6 +164,13 @@ def fill_errors(
                 x_estim_temp,
                 hyperparams,
             )
+            
+
+            if 'ISE_g_clip' in x_temp and j < sizes["ISE_g_clip"] and hyperparams_dict["ISE_g_clip"][j] == "quantile":
+                hyperparams_dict["ISE_g_clip"][j] == hyperparams["ISE_g_clip"]
+            
+            if 'USE_g_estim_clip' in x_temp and j < sizes["ISE_g_estim_clip"] and hyperparams_dict["ISE_g_estim_clip"][j] == "quantile":
+                hyperparams_dict["ISE_g_estim_clip"][j] == hyperparams["ISE_g_estim_clip"]
 
             for x_temp in x_estim_temp:
                 error_hyp[x_temp][j] = error_hyp[x_temp][j] + np.exp(

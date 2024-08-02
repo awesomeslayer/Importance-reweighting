@@ -18,11 +18,12 @@ def extr_plots(conf, params, metrics_hyp_dict, hyperparams_dict, bw):
         ax.set_ylabel("mape", fontsize=26)
         if params["log_flag"]:
             ax.set_xscale("log")
+        if x_temp == "ISE_g_estim_KL":
+            ax.set_xscale("log")
         plt.savefig(
             f"./plots/results/extr_plots/{params['model']}_{params['f']}/{x_temp}_{conf['max_cov']}_bw{bw}.pdf"
         )
         plt.tight_layout()
-        # plt.show()
 
 
 def bw_plot(conf, params, bw_list, best_metrics_dict):
@@ -49,7 +50,6 @@ def bw_plot(conf, params, bw_list, best_metrics_dict):
             f"./plots/results/bw_plots/{params['model']}_{params['f']}/max_cov{conf['max_cov']}.pdf"
         )
         plt.tight_layout()
-        # plt.show()
 
     for x_temp, er_list in best_metrics_dict["mape"].items():
         print(x_temp, er_list)

@@ -75,6 +75,8 @@ def test(
             gen_dict["g_test"],
             hyperparams["ISE_g_clip"],
             smooth_flag=hyperparams_params["smooth_flag"],
+            delta = hyperparams_params["clip_delta"],
+            thrhold=hyperparams_params["clip_thrhold"]
         )
 
     if "ISE_g_estim_clip" in target_error:
@@ -85,6 +87,8 @@ def test(
             gen_dict["g_test"],
             hyperparams["ISE_g_estim_clip"],
             smooth_flag=hyperparams_params["smooth_flag"],
+            delta = hyperparams_params["clip_delta"],
+            thrhold=hyperparams_params["clip_thrhold"]
         )
 
     return iter_err

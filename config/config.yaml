@@ -1,6 +1,6 @@
 conf:
   max_mu : 100
-  n_samples : 5000
+  n_samples : 6000
   n_dim : 2 
   n_components : 30
   n_GP_components : 5
@@ -12,19 +12,22 @@ hyperparams_dict:
   ISE_g_estim_clip : [0, 0.2, 0.4, 0.6, 0.8, 0.95]
   
 params:
-  max_cov_list : [5, 7, 10, 15, 25] 
+  max_cov_list : [1, 5, 10, 15, 20, 25, 30, 40, 50, 70, 100, 120, 140] 
   x : ["MCE_g", "ISE_g", "ISE_g_estim"]
   x_hyp: ["ISE_g_reg_degree", "ISE_g_clip", "ISE_g_estim_clip"]
   y : ["MCE_p"]
-  n_tests : 10
-  f : "linear"
+  n_tests : 15
+  f : "GMM"
   model : "linear" 
   n_splits : 1
   log_flag : False
 
 hyperparams_params:
   bw_list : [5, "KL_LSCV"]
-  beta_list : [0.0075, 0.015, 0.75, 1.5, 2]
+  beta_list : [0.001, 1, 10, 10000]
   grid_flag : True
   smooth_flag : True
+  clip_thrhold : 0.05
+  clip_delta : 0.1
+
   
