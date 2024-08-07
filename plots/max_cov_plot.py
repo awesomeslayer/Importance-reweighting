@@ -1,7 +1,7 @@
 import logging
 import hydra
 import matplotlib.pyplot as plt
-import tqdm
+from tqdm import tqdm
 from omegaconf import DictConfig, OmegaConf
 
 from source.run import run
@@ -23,23 +23,19 @@ def max_cov_plot(cfg: DictConfig):
     ]
 
     if "KL_LSCV" in hyperparams_params["bw_list"]:
-        method_list_all += [
-            "ISE_g_estim_KL",
-        ]
-        method_list_estim += [
-            "ISE_g_estim_KL",
-        ]
-
-    errors_plot = {}
-    for x in method_list_all:
-        errors_plot[x] = []
+        method_list_KL = [s + '_KL' for s in method_list_all if "estim" in s  or "reg" in s] 
+    
+    log.info(f"\nmethod_list_all = {method_list_all},\n method_list_estim = {method_list_estim},\n method_list_no_estim = {method_list_no_estim},\n method_list_KL = {method_list_KL}")
+    mape_plot = {}
+    for x in method_list_all + method_list_KL:
+        mape_plot[x] = []
 
     log.info(f"\nparams: {params}\n")
     log.info(f"\nconfig: {conf}\n")
     log.info(f"\nhyperparams_dict; {hyperparams_dict}\n")
     log.info(f"\nhyperparams_params: {hyperparams_params}\n")
 
-    for max_cov in tqdm.tqdm(params["max_cov_list"]):
+    for max_cov in tqdm(params["max_cov_list"]):
         log.info(f"max_cov:{max_cov}")
         conf["max_cov"] = max_cov
 
@@ -47,16 +43,16 @@ def max_cov_plot(cfg: DictConfig):
 
         log.info(f"\nmape's and rmse's for max_cov={max_cov}:\n {elem}\n")
 
-        for x_temp in method_list_all:
-            errors_plot[x_temp] += [elem["mape"][x_temp]]
+        for x_temp in method_list_all + method_list_KL:
+            mape_plot[x_temp] += [elem["mape"][x_temp]]
             
-    log.info(f"\nfor max_cov_list = {params['max_cov_list']}:\nerrors_plot =\n {errors_plot}\n")
+    log.info(f"\nfor max_cov_list = {params['max_cov_list']}:\nerrors_plot =\n {mape_plot}\n")
     fig, ax = plt.subplots(figsize=(12, 12))
     for x_temp in method_list_estim:
-        ax.plot(params["max_cov_list"], errors_plot[x_temp], label=f"{x_temp}")
+        ax.plot(params["max_cov_list"], mape_plot[x_temp], label=f"{x_temp}")
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
-    ax.set_ylabel("errors", fontsize=26)
+    ax.set_ylabel("mape", fontsize=26)
     plt.savefig(
         f"./plots/results/max_cov_plots/{params['model']}_{params['f']}_max_cov_estim.pdf"
     )
@@ -65,10 +61,10 @@ def max_cov_plot(cfg: DictConfig):
 
     fig, ax = plt.subplots(figsize=(12, 12))
     for x_temp in method_list_no_estim:
-        ax.plot(params["max_cov_list"], errors_plot[x_temp], label=f"{x_temp}")
+        ax.plot(params["max_cov_list"], mape_plot[x_temp], label=f"{x_temp}")
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
-    ax.set_ylabel("errors", fontsize=26)
+    ax.set_ylabel("mape", fontsize=26)
     plt.savefig(
         f"./plots/results/max_cov_plots/{params['model']}_{params['f']}_max_cov_no_estim.pdf"
     )
@@ -76,12 +72,24 @@ def max_cov_plot(cfg: DictConfig):
 
     fig, ax = plt.subplots(figsize=(12, 12))
     for x_temp in method_list_all:
-        ax.plot(params["max_cov_list"], errors_plot[x_temp], label=f"{x_temp}")
+        ax.plot(params["max_cov_list"], mape_plot[x_temp], label=f"{x_temp}")
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
-    ax.set_ylabel("errors", fontsize=26)
+    ax.set_ylabel("mape", fontsize=26)
     plt.savefig(
         f"./plots/results/max_cov_plots/{params['model']}_{params['f']}_max_cov.pdf"
+    )
+    plt.tight_layout()
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    
+    for x_temp in method_list_KL + ["MCE_g"] + ["ISE_g_estim"]:
+        ax.plot(params["max_cov_list"], mape_plot[x_temp], label=f"{x_temp}")
+    plt.legend(fontsize=26)
+    ax.set_xlabel("max_cov", fontsize=26)
+    ax.set_ylabel("mape", fontsize=26)
+    plt.savefig(
+        f"./plots/results/max_cov_plots/{params['model']}_{params['f']}_max_cov_KL.pdf"
     )
     plt.tight_layout()
 

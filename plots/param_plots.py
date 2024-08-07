@@ -4,26 +4,27 @@ import numpy as np
 
 def extr_plots(conf, params, metrics_hyp_dict, hyperparams_dict, bw):
     for x_temp in params["x_hyp"]:
-        fig, ax = plt.subplots(figsize=(12, 12))
-        ax.plot(
-            hyperparams_dict[x_temp],
-            metrics_hyp_dict["mape"][x_temp],
-            label=f"{x_temp}",
-        )
-        plt.legend(fontsize=26)
-        plt.title(
-            f"max_cov{conf['max_cov']}_bw{bw}"
-        )
-        ax.set_xlabel(f"param for {x_temp}", fontsize=26)
-        ax.set_ylabel("mape", fontsize=26)
-        if params["log_flag"]:
-            ax.set_xscale("log")
-        if x_temp == "ISE_g_estim_KL":
-            ax.set_xscale("log")
-        plt.savefig(
-            f"./plots/results/extr_plots/{params['model']}_{params['f']}/{x_temp}_{conf['max_cov']}_bw{bw}.pdf"
-        )
-        plt.tight_layout()
+        if(len(hyperparams_dict[x_temp]) > 1):
+            fig, ax = plt.subplots(figsize=(12, 12))
+            ax.plot(
+                hyperparams_dict[x_temp],
+                metrics_hyp_dict["mape"][x_temp],
+                label=f"{x_temp}",
+            )
+            plt.legend(fontsize=26)
+            plt.title(
+                f"max_cov{conf['max_cov']}_bw{bw}"
+            )
+            ax.set_xlabel(f"param for {x_temp}", fontsize=26)
+            ax.set_ylabel("mape", fontsize=26)
+            if params["log_flag"]:
+                ax.set_xscale("log")
+            if x_temp == "ISE_g_estim_KL":
+                ax.set_xscale("log")
+            plt.savefig(
+                f"./plots/results/extr_plots/{params['model']}_{params['f']}/{x_temp}_{conf['max_cov']}_bw{bw}.pdf"
+            )
+            plt.tight_layout()
 
 
 def bw_plot(conf, params, bw_list, best_metrics_dict):
@@ -52,7 +53,6 @@ def bw_plot(conf, params, bw_list, best_metrics_dict):
         plt.tight_layout()
 
     for x_temp, er_list in best_metrics_dict["mape"].items():
-        print(x_temp, er_list)
         best_metrics_dict["mape"][x_temp] = er_list[er_list.index(min(er_list))]
         best_metrics_dict["rmse"][x_temp] = best_metrics_dict["rmse"][x_temp][
             er_list.index(min(er_list))

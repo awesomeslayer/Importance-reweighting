@@ -57,6 +57,19 @@ def test(
             g_estim_new,
             gen_dict["g_test"],
         )
+    
+    if "ISE_g_reg_uniform_KL" in target_error:
+        epsilon = hyperparams["ISE_g_reg_uniform_KL"]
+        g_estim_new = lambda X: (1 - epsilon) * gen_dict["g_estim"](X) + epsilon / (
+            conf["max_mu"] ** 2
+        )
+
+        iter_err["ISE_g_reg_uniform_KL"] = importance_sampling_error(
+            gen_dict["err"],
+            gen_dict["p"],
+            g_estim_new,
+            gen_dict["g_test"],
+        )
 
     if "ISE_g_reg_degree" in target_error:
         iter_err["ISE_g_reg_degree"] = importance_sampling_error_degree(
@@ -67,6 +80,15 @@ def test(
             hyperparams["ISE_g_reg_degree"],
         )
 
+    if "ISE_g_reg_degree_KL" in target_error:
+        iter_err["ISE_g_reg_degree_KL"] = importance_sampling_error_degree(
+            gen_dict["err"],
+            gen_dict["p"],
+            gen_dict["g_estim"],
+            gen_dict["g_test"],
+            hyperparams["ISE_g_reg_degree_KL"],
+        )
+
     if "ISE_g_clip" in target_error:
         iter_err["ISE_g_clip"] = ISE_clip(
             gen_dict["err"],
@@ -75,8 +97,8 @@ def test(
             gen_dict["g_test"],
             hyperparams["ISE_g_clip"],
             smooth_flag=hyperparams_params["smooth_flag"],
-            delta = hyperparams_params["clip_delta"],
-            thrhold=hyperparams_params["clip_thrhold"]
+            thrhold=hyperparams_params["clip_thrhold"],
+            clip_step=hyperparams_params["clip_step"]   
         )
 
     if "ISE_g_estim_clip" in target_error:
@@ -87,8 +109,20 @@ def test(
             gen_dict["g_test"],
             hyperparams["ISE_g_estim_clip"],
             smooth_flag=hyperparams_params["smooth_flag"],
-            delta = hyperparams_params["clip_delta"],
-            thrhold=hyperparams_params["clip_thrhold"]
+            thrhold=hyperparams_params["clip_thrhold"],
+            clip_step=hyperparams_params["clip_step"]
+        )
+
+    if "ISE_g_estim_clip_KL" in target_error:
+        iter_err["ISE_g_estim_clip_KL"] = ISE_clip(
+            gen_dict["err"],
+            gen_dict["p"],
+            gen_dict["g_estim"],
+            gen_dict["g_test"],
+            hyperparams["ISE_g_estim_clip_KL"],
+            smooth_flag=hyperparams_params["smooth_flag"],
+            thrhold=hyperparams_params["clip_thrhold"],
+            clip_step=hyperparams_params["clip_step"]
         )
 
     return iter_err
