@@ -1,14 +1,24 @@
 import logging
 import numpy as np
 from scipy.special import logsumexp
+from sklearn.neighbors import KernelDensity
+from .KL_LSCV import KL_find_bw
 
-def importance_sampling_error(err, p, g, g_sample):
+def density_estimation(conf, hyp_params_dict, test_gen_dict, bw):
+    if bw == 'KL':
+        bw_temp = KL_find_bw(conf, test_gen_dict["g_train"],test_gen_dict["p_test"], hyp_params_dict['beta'], hyp_params_dict['KL_flag'])
+    else:
+        bw_temp = bw
+
+    kde = KernelDensity(kernel='gaussian', bandwidth = bw_temp).fit(test_gen_dict["g_train"])
+    return lambda X: kde.score_samples(X)
+
+def ISE(err, p, g, g_sample):
     return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(
         g_sample.shape[0]
     )
 
-
-def importance_sampling_error_degree(err, p, g, g_sample, lam):
+def ISE_deg(err, p, g, g_sample, lam):
     if lam != 0:
         return logsumexp(err(g_sample) + lam * (p(g_sample) - g(g_sample))) - np.log(
             g_sample.shape[0]
@@ -17,12 +27,7 @@ def importance_sampling_error_degree(err, p, g, g_sample, lam):
         return logsumexp(err(g_sample)) - np.log(g_sample.shape[0])
 
 
-def monte_carlo_error(err, p_sample):
-    """
-    :param err: log-error function
-    :param p_sample:
-    :return: log-MCE
-    """
+def MCE(err, p_sample):
     return logsumexp(err(p_sample)) - np.log(p_sample.shape[0])
 
 
@@ -40,14 +45,6 @@ def smooth_clip(x, eps):
 
 
 def ISE_clip(err, p, g, g_sample, eps, smooth_flag=True, thrhold = 0.95, clip_step = 0.001):
-    """
-    :param err: log-error function
-    :param p: log-probability density of target distribution
-    :param g: log-probability density of sample distribution
-    :param g_sample:
-    :param eps: epsilon for clip
-    :return: log-ISE with clip
-    """
     log = logging.getLogger("__main__")
     if(eps == "quantile"):
         for eps_temp in np.arange(1 - clip_step, -clip_step, -clip_step):
@@ -59,7 +56,6 @@ def ISE_clip(err, p, g, g_sample, eps, smooth_flag=True, thrhold = 0.95, clip_st
                 clipped_array.append(np.log(clipped_weight))
                 num_clipped = num_clipped + i
 
-            #log.debug(f"for eps = {eps_temp} got num = {num_clipped} instead of {len(g_sample) * thrhold}")
             if num_clipped > len(g_sample) * thrhold:
                 eps = eps_temp
                 log.debug(f"eps_clip_quantile = {eps}")
@@ -68,7 +64,7 @@ def ISE_clip(err, p, g, g_sample, eps, smooth_flag=True, thrhold = 0.95, clip_st
         clipped_array = []
         for p_elem, g_elem in zip(p(g_sample), g(g_sample)):
                 weight = np.exp(p_elem - g_elem)
-                clipped_weight, i = clip(weight, 1-eps_temp, 1+eps_temp)
+                clipped_weight, i = clip(weight, 1-eps, 1+eps)
                 clipped_array.append(np.log(clipped_weight))
     
     if smooth_flag:
@@ -78,3 +74,9 @@ def ISE_clip(err, p, g, g_sample, eps, smooth_flag=True, thrhold = 0.95, clip_st
             clipped_array.append(np.log(smooth_clip(weight, eps)))
 
     return logsumexp(clipped_array + err(g_sample)) - np.log(g_sample.shape[0])
+
+def rmse(x_err, y_err):
+    return np.sqrt(np.mean((x_err - y_err) ** 2))
+
+def mape(x_err, y_err):
+    return np.mean(100 * np.abs(x_err - y_err) / y_err)
