@@ -4,14 +4,17 @@ from scipy.special import logsumexp
 from sklearn.neighbors import KernelDensity
 from .KL_LSCV import KL_find_bw
 
+log = logging.getLogger("__main__")
+
 def density_estimation(conf, hyp_params_dict, test_gen_dict, bw):
     if bw == 'KL':
         bw_temp = KL_find_bw(conf, test_gen_dict["g_train"],test_gen_dict["p_test"], hyp_params_dict['beta'], hyp_params_dict['KL_flag'])
     else:
         bw_temp = bw
-
+    log.debug(f"bw = {bw}, bw_temp = {bw_temp}")
     kde = KernelDensity(kernel='gaussian', bandwidth = bw_temp).fit(test_gen_dict["g_train"])
-    return lambda X: kde.score_samples(X)
+    g_estim = lambda X: kde.score_samples(X) 
+    return g_estim
 
 def ISE(err, p, g, g_sample):
     return logsumexp(err(g_sample) + p(g_sample) - g(g_sample)) - np.log(

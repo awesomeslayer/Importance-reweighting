@@ -25,23 +25,27 @@ def max_cov_plot(cfg: DictConfig):
     bw_dict = {}
     #create additional methods_names if needed:
     if "KL" in hyp_params_dict["bw_list"]:
-        joint = '_KL'
         hyp_params_dict["bw_list"].remove("KL")
+
+        for s in copy(methods_names["x_estim"]):
+            methods_names["x_estim"] += [s + '_KL']
+            bw_dict[s] = copy(hyp_params_dict["bw_list"])
+            
+            bw_dict[s + '_KL'] = ['KL']
+
+            if s in hyp_dict:
+                hyp_dict[s + '_KL'] = hyp_dict[s]
+            else:
+                hyp_dict[s] = ['foo']
+                hyp_dict[s + '_KL'] = ['foo']
+
+        hyp_params_dict["bw_list"].append("KL")
+    
     else:
-        joint = ''
- 
-    for s in copy(methods_names["x_estim"]):
-        methods_names["x_estim"] += [s + joint]
-        bw_dict[s] = copy(hyp_params_dict["bw_list"])
-        bw_dict[s + joint] = ['KL']
-
-        if s in hyp_dict:
-            hyp_dict[s + joint] = hyp_dict[s]
-        else:
-            hyp_dict[s] = ['foo']
-            hyp_dict[s + joint] = ['foo']
-
-    hyp_params_dict["bw_list"].append("KL")
+        for s in methods_names["x_estim"]:
+            bw_dict[s] = copy(hyp_params_dict["bw_list"])
+            if s not in hyp_dict:
+                hyp_dict[s] = ['foo']
     
     for s in methods_names["x_no_estim"] + methods_names["y"]:
         bw_dict[s] = ['g']

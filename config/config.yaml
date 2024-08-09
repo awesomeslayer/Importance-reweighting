@@ -6,25 +6,25 @@ conf:
   n_GP_components : 5
 
 params:
-  max_cov_list : [40, 50, 60, 70, 80] 
-  n_tests : 10
+  max_cov_list : [40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 170, 200]
+  n_tests : 20
   f : "linear"
   model : "linear" 
   n_splits : 1
 
 methods:
-  x_estim : ["ISE_deg", "ISE_uni", "ISE_estim", "ISE_estim_clip"] 
+  x_estim : ["ISE_estim", "ISE_deg", "ISE_uni", "ISE_estim_clip"] 
   x_no_estim : ["MCE_g", "ISE", "ISE_clip"]
   y : ["MCE_p"]
 
 hyp_dict:
   ISE_uni : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
   ISE_deg : [0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.6, 2, 2.2, 2.5, 3]
-  ISE_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-  ISE_estim_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  ISE_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99999]
+  ISE_estim_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99999]
 
 hyp_params_dict:
-  bw_list : [5, 'KL']
+  bw_list : [5, "KL"]
   beta : 1
   KL_flag : True
   smooth_flag : True

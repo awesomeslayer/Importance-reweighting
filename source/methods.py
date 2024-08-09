@@ -17,29 +17,37 @@ class IS_method:
 
         #for each bw, for each hyperparam init err_list with n_tests size 
         # and metrics_dict with same sizes (n_tests -> one metrics (mape/rmse))
-        self.test_errors_list = [[np.empty(n_tests) for _ in range(len(hyperparams_list))] for _ in range(len(bw_list))]
+        self.test_errors_list = [[np.zeros(n_tests) for _ in range(len(hyperparams_list))] for _ in range(len(bw_list))]
         
-        self.test_metrics_dict = {"mape" : [np.empty(len(hyperparams_list)) for _ in range(len(bw_list))],
-                                         "rmse" : [np.empty(len(hyperparams_list)) for _ in range(len(bw_list))]}
+        self.test_metrics_dict = {"mape" : [np.zeros(len(hyperparams_list)) for _ in range(len(bw_list))],
+                                         "rmse" : [np.zeros(len(hyperparams_list)) for _ in range(len(bw_list))]}
         log.debug(f"inited with name = {name}")
 
     #default names: "ISE_deg", "ISE_uni", "ISE_estim", "ISE_estim_clip", "MCE_g", "ISE", "ISE_clip", "MCE_p"
     def single_test(self, conf, test_gen_dict, hyperparam, hyp_params_dict):
         if self.name == 'MCE_p':
-            return MCE(test_gen_dict["err"], test_gen_dict["p_test"])
+            error = MCE(test_gen_dict["err"], test_gen_dict["p_test"])
+            log.debug(f"name = {self.name}, error = {error} ]")
+            return error
         
         if self.name == 'MCE_g':
-            return MCE(test_gen_dict["err"], test_gen_dict["g_test"])
+            error = MCE(test_gen_dict["err"], test_gen_dict["g_test"])
+            log.debug(f"name = {self.name}, error = {error} ]")
+            return error
         
         if 'deg' in self.name:
-            return ISE_deg(test_gen_dict["err"], test_gen_dict["p"], test_gen_dict["g"], test_gen_dict["g_test"], hyperparam)
+            error = ISE_deg(test_gen_dict["err"], test_gen_dict["p"], test_gen_dict["g"], test_gen_dict["g_test"], hyperparam)
+            log.debug(f"name = {self.name}, error = {error} ]")
+            return error
         
         if 'uni' in self.name:
             g_estim_uni = lambda X: (1 - hyperparam) * test_gen_dict["g"](X) + hyperparam / (conf["max_mu"] ** 2)
-            return ISE(test_gen_dict["err"], test_gen_dict["p"], g_estim_uni, test_gen_dict["g_test"])
+            error = ISE(test_gen_dict["err"], test_gen_dict["p"], g_estim_uni, test_gen_dict["g_test"])
+            log.debug(f"name = {self.name}, error = {error} ]")
+            return error
         
         if 'clip' in self.name:
-            return ISE_clip(test_gen_dict["err"],
+            error = ISE_clip(test_gen_dict["err"],
             test_gen_dict["p"],
             test_gen_dict["g"],
             test_gen_dict["g_test"],
@@ -48,7 +56,12 @@ class IS_method:
             thrhold=hyp_params_dict["clip_thrhold"],
             clip_step=hyp_params_dict["clip_step"])
         
-        if self.name == 'ISE' or self.name == 'ISE_estim':
-            return ISE(test_gen_dict["err"], test_gen_dict["p"], test_gen_dict["g"], test_gen_dict["g_test"])
+            log.debug(f"name = {self.name}, error = {error} ]")
+            return error
+        
+        if self.name == 'ISE' or self.name == 'ISE_estim' or self.name == 'ISE_estim_KL':
+            error = ISE(test_gen_dict["err"], test_gen_dict["p"], test_gen_dict["g"], test_gen_dict["g_test"])
+            log.debug(f"name = {self.name}, error = {error} ]")
+            return error
         
         return False   

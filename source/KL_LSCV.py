@@ -6,6 +6,8 @@ from scipy.optimize import minimize, basinhopping
 from sklearn.neighbors import KernelDensity
 
 
+log = logging.getLogger("__main__")
+
 def u_mean(log_f_n, p_sample):
     return np.mean(log_f_n(p_sample))
 
@@ -34,13 +36,15 @@ def squared_error_sklearn(h, conf, g_sample, p_sample, beta, flag):
         sub = f_sub_sample_mean()
         cv = integral[0] - 2 * sub - uniform_sum
     
+    log.debug(f"cv = {cv}")
     return cv
 
 
 def KL_find_bw(conf, g_sample, p_sample, beta=0, flag = True):
     h0 = np.array(g_sample).std() * (len(g_sample) ** (-0.2))
+    log.debug(f"init h = {h0}")
     cons = {"type": "ineq", "fun": lambda x: x[0] - 10 ** (-8)}
     
     h = minimize(squared_error_sklearn, h0, args=(conf, g_sample, p_sample, beta, flag), constraints=cons).x
-
+    log.debug(f"final h = {h[0]}")
     return h[0]
