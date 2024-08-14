@@ -1,13 +1,13 @@
 conf:
   max_mu : 100
-  n_samples : 7000
+  n_samples : 10000
   n_dim : 2 
   n_components : 30
   n_GP_components : 5
 
 params:
-  max_cov_list : [40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 170, 200]
-  n_tests : 20
+  max_cov_list : [40, 45, 50, 55, 60, 65, 70, 75, 90, 105, 120, 140, 170, 200]
+  n_tests : 30
   f : "linear"
   model : "linear" 
   n_splits : 1

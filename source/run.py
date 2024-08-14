@@ -16,9 +16,9 @@ from .simulation import (
 )
 from .plots import plot_extr_bw, plot_extr_hyp
 from .estimations import density_estimation, mape, rmse
+from .KL_LSCV import KL_plot
 
 log = logging.getLogger("__main__")
-
 
 def run(
     conf,
@@ -59,12 +59,16 @@ def run(
         p_sample, test_gen_dict["p"] = params["p_gen"]()
         test_gen_dict["model"] = params["model_gen"]
 
-        for _, (train_idx, test_idx) in enumerate(kf.split(g_sample)):
+        for n_fold, (train_idx, test_idx) in enumerate(kf.split(g_sample)):
 
             test_gen_dict["g_train"] = g_sample[train_idx]
             test_gen_dict["g_test"] = g_sample[test_idx]
             test_gen_dict["p_test"] = p_sample[test_idx]
 
+            if(n_test == 0):
+                if(n_fold == 0):
+                    log.debug(f"for n_test: {n_test} and n_fold: {n_fold} getting plot:")
+                    KL_plot(conf, test_gen_dict["g_sample"], test_gen_dict["p_sample"], hyp_params_dict["beta"], hyp_params_dict["KL_flag"], params)
             log.debug(f"test_gen_dict: {test_gen_dict}")
 
             params["model_gen"].fit(

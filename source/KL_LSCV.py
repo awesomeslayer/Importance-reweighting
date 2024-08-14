@@ -1,18 +1,40 @@
 import numpy as np
-
-# import statsmodels.api as sm  # for library lscv, beta = 0
+import matplotlib.pyplot as plt
+#import statsmodels.api as sm  # for library lscv, beta = 0
 import logging
 from scipy.integrate import dblquad
-from scipy.optimize import minimize, basinhopping
+from scipy.optimize import minimize
 from sklearn.neighbors import KernelDensity
 
 
 log = logging.getLogger("__main__")
 
+def KL_plot(conf, g_sample, p_sample, beta, flag, params, h_list = np.arange(1, 30, 0.33)):
+    kl_list = []
+    for h in h_list:
+        kl_list += [squared_error_sklearn([h], conf, g_sample, p_sample, beta, flag)]
+    
+    log.debug(f"h_list:{h_list}")
+    log.debug(f"kl_list:{kl_list}")
+    
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.plot(
+        h_list,
+        kl_list,
+        label=f"KL",
+    )
+    plt.legend(fontsize=26)
+    plt.title(f"KL(h) for {conf["max_cov"]}")
+    ax.set_xlabel("h", fontsize=26)
+    ax.set_ylabel("KL", fontsize=26)
+    plt.tight_layout()
+    plt.savefig(
+            f"./plots/results/KL_plots/{params['model']}_{params['f']}/cov_{conf['max_cov']}.pdf"
+        )
+    return True
 
 def u_mean(log_f_n, p_sample):
     return np.mean(log_f_n(p_sample))
-
 
 def squared_error_sklearn(h, conf, g_sample, p_sample, beta, flag):
     h = h[0]
