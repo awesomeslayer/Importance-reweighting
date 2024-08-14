@@ -3,6 +3,7 @@ import numpy as np
 from scipy.special import logsumexp
 from sklearn.neighbors import KernelDensity
 from .KL_LSCV import KL_find_bw
+from scipy.stats import gaussian_kde
 
 log = logging.getLogger("__main__")
 
@@ -15,14 +16,21 @@ def density_estimation(conf, hyp_params_dict, test_gen_dict, bw):
             test_gen_dict["p_test"],
             hyp_params_dict["beta"],
             hyp_params_dict["KL_flag"],
+            hyp_params_dict["estim_type"],
         )
     else:
         bw_temp = bw
     log.debug(f"bw = {bw}, bw_temp = {bw_temp}")
-    kde = KernelDensity(kernel="gaussian", bandwidth=bw_temp).fit(
-        test_gen_dict["g_train"]
-    )
-    g_estim = lambda X: kde.score_samples(X)
+
+    if hyp_params_dict["estim_type"] == "sklearn":
+        kde = KernelDensity(kernel="gaussian", bandwidth=bw_temp).fit(
+            test_gen_dict["g_train"]
+        )
+        g_estim = lambda X: kde.score_samples(X)
+    elif hyp_params_dict["estim_type"] == "scipy":
+        kde = gaussian_kde(test_gen_dict["g_train"].T, bw_method=bw_temp)
+        g_estim = lambda X: np.log(kde.evaluate(X.T))
+
     return g_estim
 
 

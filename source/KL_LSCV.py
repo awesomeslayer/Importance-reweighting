@@ -1,22 +1,26 @@
 import numpy as np
 import matplotlib.pyplot as plt
-#import statsmodels.api as sm  # for library lscv, beta = 0
+
+# import statsmodels.api as sm  # for library lscv, beta = 0
 import logging
 from scipy.integrate import dblquad
 from scipy.optimize import minimize
 from sklearn.neighbors import KernelDensity
-
+from scipy.stats import gaussian_kde
 
 log = logging.getLogger("__main__")
 
-def KL_plot(conf, g_sample, p_sample, beta, flag, params, h_list = np.arange(1, 30, 0.33)):
+
+def KL_plot(
+    conf, g_sample, p_sample, beta, flag, params, h_list=np.arange(1, 30, 0.33)
+):
     kl_list = []
     for h in h_list:
         kl_list += [squared_error_sklearn([h], conf, g_sample, p_sample, beta, flag)]
-    
+
     log.debug(f"h_list:{h_list}")
     log.debug(f"kl_list:{kl_list}")
-    
+
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.plot(
         h_list,
@@ -24,22 +28,29 @@ def KL_plot(conf, g_sample, p_sample, beta, flag, params, h_list = np.arange(1, 
         label=f"KL",
     )
     plt.legend(fontsize=26)
-    plt.title(f"KL(h) for {conf["max_cov"]}")
+    plt.title(f"KL(h) for {conf['max_cov']}")
     ax.set_xlabel("h", fontsize=26)
     ax.set_ylabel("KL", fontsize=26)
     plt.tight_layout()
     plt.savefig(
-            f"./plots/results/KL_plots/{params['model']}_{params['f']}/cov_{conf['max_cov']}.pdf"
-        )
+        f"./plots/results/KL_plots/{params['model']}_{params['f']}/cov_{conf['max_cov']}.pdf"
+    )
     return True
+
 
 def u_mean(log_f_n, p_sample):
     return np.mean(log_f_n(p_sample))
 
-def squared_error_sklearn(h, conf, g_sample, p_sample, beta, flag):
+
+def squared_error_sklearn(h, conf, g_sample, p_sample, beta, flag, estim_type):
     h = h[0]
-    kde = KernelDensity(kernel="gaussian", bandwidth=h).fit(g_sample)
-    log_f_n = lambda X: (kde.score_samples(X))
+    if estim_type == "sklearn":
+        kde = KernelDensity(kernel="gaussian", bandwidth=h).fit(g_sample)
+        log_f_n = lambda X: (kde.score_samples(X))
+
+    elif estim_type == "scipy":
+        kde = gaussian_kde(g_sample.T, bw_method=h)
+        g_estim = lambda X: np.log(kde.evaluate(X.T))
 
     uniform_sum = beta * u_mean(log_f_n, p_sample)
     if flag:
@@ -65,7 +76,7 @@ def squared_error_sklearn(h, conf, g_sample, p_sample, beta, flag):
     return cv
 
 
-def KL_find_bw(conf, g_sample, p_sample, beta=0, flag=True):
+def KL_find_bw(conf, g_sample, p_sample, beta=0, flag=True, estim_type="sklearn"):
     h0 = np.array(g_sample).std() * (len(g_sample) ** (-0.2))
     log.debug(f"init h = {h0}")
     cons = {"type": "ineq", "fun": lambda x: x[0] - 10 ** (-8)}
@@ -73,7 +84,7 @@ def KL_find_bw(conf, g_sample, p_sample, beta=0, flag=True):
     h = minimize(
         squared_error_sklearn,
         h0,
-        args=(conf, g_sample, p_sample, beta, flag),
+        args=(conf, g_sample, p_sample, beta, flag, estim_type),
         constraints=cons,
     ).x
     log.debug(f"final h = {h[0]}")
