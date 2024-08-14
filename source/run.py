@@ -14,10 +14,11 @@ from .simulation import (
     random_linear_func,
     random_uniform_samples,
 )
-from .plots import (plot_extr_bw, plot_extr_hyp)
+from .plots import plot_extr_bw, plot_extr_hyp
 from .estimations import density_estimation, mape, rmse
 
 log = logging.getLogger("__main__")
+
 
 def run(
     conf,
@@ -43,15 +44,15 @@ def run(
         if params["n_splits"] > 1
         else ShuffleSplit(n_splits=1, test_size=0.3, random_state=0)
     )
-    
+
     for method in methods_list:
-                for n_bw, _ in enumerate(method.bw_list):
-                    for n_hyp, _ in enumerate(method.hyperparams_list):
-                        method.test_errors_list[n_bw][n_hyp] = np.zeros(params["n_tests"])
+        for n_bw, _ in enumerate(method.bw_list):
+            for n_hyp, _ in enumerate(method.hyperparams_list):
+                method.test_errors_list[n_bw][n_hyp] = np.zeros(params["n_tests"])
 
     for n_test in trange(params["n_tests"]):
         test_gen_dict = {}
-        g_estim_dict = {}       
+        g_estim_dict = {}
 
         test_gen_dict["f"] = params["f_gen"]()
         g_sample, g_estim_dict["g"] = params["g_gen"]()
@@ -65,16 +66,20 @@ def run(
             test_gen_dict["p_test"] = p_sample[test_idx]
 
             log.debug(f"test_gen_dict: {test_gen_dict}")
-            
-            params["model_gen"].fit(test_gen_dict["g_train"], test_gen_dict["f"](test_gen_dict["g_train"]))
+
+            params["model_gen"].fit(
+                test_gen_dict["g_train"], test_gen_dict["f"](test_gen_dict["g_train"])
+            )
 
             test_gen_dict["err"] = lambda X: np.log(
                 np.abs(test_gen_dict["f"](X) - params["model_gen"].predict(X))
             )
-            
+
             for bw in hyp_params_dict["bw_list"]:
-                g_estim_dict[bw] = density_estimation(conf, hyp_params_dict, test_gen_dict, bw)
-            
+                g_estim_dict[bw] = density_estimation(
+                    conf, hyp_params_dict, test_gen_dict, bw
+                )
+
             log.debug(f"n_test: {n_test},\n test/train idx:{train_idx},\n {test_idx}\n")
             log.debug(f"g_estim_dict:\n {g_estim_dict}\n")
 
@@ -84,39 +89,57 @@ def run(
                 for n_bw, bw in enumerate(method.bw_list):
                     test_gen_dict["g"] = g_estim_dict[bw]
                     for n_hyp, hyperparam in enumerate(method.hyperparams_list):
-                        method.test_errors_list[n_bw][n_hyp][n_test] = method.test_errors_list[n_bw][n_hyp][n_test] + \
-                                                                       method.single_test(conf, test_gen_dict, hyperparam, hyp_params_dict)/params["n_splits"]
+                        method.test_errors_list[n_bw][n_hyp][n_test] = (
+                            method.test_errors_list[n_bw][n_hyp][n_test]
+                            + method.single_test(
+                                conf, test_gen_dict, hyperparam, hyp_params_dict
+                            )
+                            / params["n_splits"]
+                        )
                 log.debug(f"got test_errors_list: {method.test_errors_list}")
     proceed_metrics(conf, params, methods_list)
 
     return True
 
+
 def proceed_metrics(conf, params, methods_list):
 
-    y_method = [method for method in methods_list if method.name == 'MCE_p'][0]
-    x_methods_list = [method for method in methods_list if method.name != 'MCE_p']
+    y_method = [method for method in methods_list if method.name == "MCE_p"][0]
+    x_methods_list = [method for method in methods_list if method.name != "MCE_p"]
 
-    log.debug(f"\ny_method:{y_method.name}, new x_methods_list:{[method.name for method in x_methods_list]}\n")
-    
+    log.debug(
+        f"\ny_method:{y_method.name}, new x_methods_list:{[method.name for method in x_methods_list]}\n"
+    )
+
     y_err = np.exp(y_method.test_errors_list[0][0])
     log.debug(f"y_err {y_err}")
     for x_method in x_methods_list:
         best_indexes = []
-        best_metrics_hyp = {"mape" : [], "rmse" : []}
-        
+        best_metrics_hyp = {"mape": [], "rmse": []}
+
         for n_bw, bw in enumerate(x_method.bw_list):
             for n_hyp, _ in enumerate(x_method.hyperparams_list):
-                x_method.test_metrics_dict["mape"][n_bw][n_hyp] = mape(np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err) 
-                x_method.test_metrics_dict["rmse"][n_bw][n_hyp] = rmse(np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err)
-            
-            log.debug(f"x_method:{x_method.name}, bw:{bw}\n test_metrics_dict[mape][bw]:{x_method.test_metrics_dict['mape'][n_bw]}\n")
-            
+                x_method.test_metrics_dict["mape"][n_bw][n_hyp] = mape(
+                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err
+                )
+                x_method.test_metrics_dict["rmse"][n_bw][n_hyp] = rmse(
+                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err
+                )
+
+            log.debug(
+                f"x_method:{x_method.name}, bw:{bw}\n test_metrics_dict[mape][bw]:{x_method.test_metrics_dict['mape'][n_bw]}\n"
+            )
+
             best_index = np.argmin(x_method.test_metrics_dict["mape"][n_bw])
             log.debug(f"best_index: {best_index}")
 
             best_indexes += [best_index]
-            best_metrics_hyp["mape"] += [x_method.test_metrics_dict["mape"][n_bw][best_index]]
-            best_metrics_hyp["rmse"] += [x_method.test_metrics_dict["rmse"][n_bw][best_index]]
+            best_metrics_hyp["mape"] += [
+                x_method.test_metrics_dict["mape"][n_bw][best_index]
+            ]
+            best_metrics_hyp["rmse"] += [
+                x_method.test_metrics_dict["rmse"][n_bw][best_index]
+            ]
             log.debug(f"best_metrics_hyp[mape]: {best_metrics_hyp['mape']}")
 
             plot_extr_hyp(conf, params, x_method, n_bw)
@@ -125,13 +148,19 @@ def proceed_metrics(conf, params, methods_list):
 
         best_index = np.argmin(best_metrics_hyp["mape"])
         log.debug(f"best index for bw_search: {best_index}")
-        
+
         x_method.best_metrics_dict["mape"] += [best_metrics_hyp["mape"][best_index]]
         x_method.best_metrics_dict["rmse"] += [best_metrics_hyp["rmse"][best_index]]
-        x_method.best_hyperparams_list += [x_method.hyperparams_list[best_indexes[best_index]]]
-        x_method.best_bw_list += [x_method.bw_list[best_index]] 
-        log.debug(f"adding best-best metrics and hyps for x_method: {x_method.name}:best metrics_dict:\n{x_method.best_metrics_dict}\n")
-        log.debug(f"best_hyperparams_list:{x_method.best_hyperparams_list},\n best_bw_list:{x_method.best_bw_list}")
+        x_method.best_hyperparams_list += [
+            x_method.hyperparams_list[best_indexes[best_index]]
+        ]
+        x_method.best_bw_list += [x_method.bw_list[best_index]]
+        log.debug(
+            f"adding best-best metrics and hyps for x_method: {x_method.name}:best metrics_dict:\n{x_method.best_metrics_dict}\n"
+        )
+        log.debug(
+            f"best_hyperparams_list:{x_method.best_hyperparams_list},\n best_bw_list:{x_method.best_bw_list}"
+        )
 
         plot_extr_bw(conf, params, best_metrics_hyp["mape"], x_method)
 

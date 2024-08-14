@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 
+
 def plot_extr_hyp(conf, params, x_method, n_bw):
-    
-    if(len(x_method.hyperparams_list) > 1):
+
+    if len(x_method.hyperparams_list) > 1:
         fig, ax = plt.subplots(figsize=(12, 12))
         ax.plot(
             x_method.hyperparams_list,
@@ -10,9 +11,7 @@ def plot_extr_hyp(conf, params, x_method, n_bw):
             label=f"{x_method.name}",
         )
         plt.legend(fontsize=26)
-        plt.title(
-            f"max_cov{conf['max_cov']}_bw{x_method.bw_list[n_bw]}"
-        )
+        plt.title(f"max_cov{conf['max_cov']}_bw{x_method.bw_list[n_bw]}")
         ax.set_xlabel(f"param for {x_method.name}", fontsize=26)
         ax.set_ylabel("mape", fontsize=26)
 
@@ -23,8 +22,9 @@ def plot_extr_hyp(conf, params, x_method, n_bw):
 
     return True
 
+
 def plot_extr_bw(conf, params, best_metrics_hyp, x_method):
-    if(len(x_method.bw_list) > 1):
+    if len(x_method.bw_list) > 1:
         fig, ax = plt.subplots(figsize=(12, 12))
         ax.plot(
             x_method.bw_list,
@@ -32,9 +32,7 @@ def plot_extr_bw(conf, params, best_metrics_hyp, x_method):
             label=f"{x_method.name}",
         )
         plt.legend(fontsize=26)
-        plt.title(
-            f"max_cov{conf['max_cov']}"
-        )
+        plt.title(f"max_cov{conf['max_cov']}")
         ax.set_xlabel(f"bw", fontsize=26)
         ax.set_ylabel("best_mape for bw", fontsize=26)
         plt.savefig(
