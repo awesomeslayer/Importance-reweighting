@@ -13,7 +13,7 @@ def density_estimation(conf, hyp_params_dict, test_gen_dict, bw):
         bw_temp = KL_find_bw(
             conf,
             test_gen_dict["g_train"],
-            test_gen_dict["p_test"],
+            test_gen_dict["p_train"],
             hyp_params_dict["beta"],
             hyp_params_dict["KL_flag"],
             hyp_params_dict["estim_type"],

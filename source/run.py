@@ -2,8 +2,7 @@ import logging
 import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import KFold, ShuffleSplit
-
-from tqdm import trange, tqdm
+from tqdm import trange
 from functools import partial
 
 from .simulation import (
@@ -14,11 +13,8 @@ from .simulation import (
     random_linear_func,
     random_uniform_samples,
 )
-from .plots import plot_extr_bw, plot_extr_hyp
+from main.plots import plot_extr_bw, plot_extr_hyp, plot_KL
 from .estimations import density_estimation, mape, rmse
-from .KL_LSCV import KL_plot
-
-from scipy.stats import gaussian_kde
 
 log = logging.getLogger("__main__")
 
@@ -66,16 +62,18 @@ def run(
 
             test_gen_dict["g_train"] = g_sample[train_idx]
             test_gen_dict["g_test"] = g_sample[test_idx]
+            test_gen_dict["p_train"] = p_sample[train_idx]
             test_gen_dict["p_test"] = p_sample[test_idx]
 
             if hyp_params_dict["KL_plot"] == True and n_test == 0 and n_fold == 0:
                 log.debug(f"for n_test: {n_test} and n_fold: {n_fold} getting plot:")
-                KL_plot(
+                plot_KL(
                     conf,
                     test_gen_dict["g_train"],
-                    test_gen_dict["p_test"],
+                    test_gen_dict["p_train"],
                     hyp_params_dict["beta"],
                     hyp_params_dict["KL_flag"],
+                    hyp_params_dict["estim_type"],
                     params,
                 )
             log.debug(f"test_gen_dict: {test_gen_dict}")

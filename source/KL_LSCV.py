@@ -11,38 +11,11 @@ from scipy.stats import gaussian_kde
 log = logging.getLogger("__main__")
 
 
-def KL_plot(
-    conf, g_sample, p_sample, beta, flag, params, h_list=np.arange(1, 30, 0.33)
-):
-    kl_list = []
-    for h in h_list:
-        kl_list += [squared_error_sklearn([h], conf, g_sample, p_sample, beta, flag)]
-
-    log.debug(f"h_list:{h_list}")
-    log.debug(f"kl_list:{kl_list}")
-
-    fig, ax = plt.subplots(figsize=(12, 12))
-    ax.plot(
-        h_list,
-        kl_list,
-        label=f"KL",
-    )
-    plt.legend(fontsize=26)
-    plt.title(f"KL(h) for {conf['max_cov']}")
-    ax.set_xlabel("h", fontsize=26)
-    ax.set_ylabel("KL", fontsize=26)
-    plt.tight_layout()
-    plt.savefig(
-        f"./plots/results/KL_plots/{params['model']}_{params['f']}/cov_{conf['max_cov']}.pdf"
-    )
-    return True
-
-
 def u_mean(log_f_n, p_sample):
     return np.mean(log_f_n(p_sample))
 
 
-def squared_error_sklearn(h, conf, g_sample, p_sample, beta, flag, estim_type):
+def squared_error(h, conf, g_sample, p_sample, beta, flag, estim_type):
     h = h[0]
     if estim_type == "sklearn":
         kde = KernelDensity(kernel="gaussian", bandwidth=h).fit(g_sample)
@@ -82,7 +55,7 @@ def KL_find_bw(conf, g_sample, p_sample, beta=0, flag=True, estim_type="sklearn"
     cons = {"type": "ineq", "fun": lambda x: x[0] - 10 ** (-8)}
 
     h = minimize(
-        squared_error_sklearn,
+        squared_error,
         h0,
         args=(conf, g_sample, p_sample, beta, flag, estim_type),
         constraints=cons,

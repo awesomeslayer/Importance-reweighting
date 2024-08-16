@@ -6,9 +6,9 @@ conf:
   n_GP_components : 5
 
 params:
-  max_cov_list : [39.8, 39.88, 39.9, 39.99, 40.1, 40.2, 40.3]
-  n_tests : 15
-  f : "GMM"
+  max_cov_list : [40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 100, 105, 120, 135, 150, 170]
+  n_tests : 17
+  f : "linear"
   model : "linear" 
   n_splits : 1
 
@@ -28,7 +28,7 @@ hyp_params_dict:
   beta : 1
   estim_type : "sklearn"
   KL_flag : True
-  KL_plot : False
+  KL_plot : True
   smooth_flag : True
   clip_thrhold : 0.25
   clip_step : 0.001
