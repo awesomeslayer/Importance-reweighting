@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import logging
 import numpy as np
 from functools import partial
+from tqdm import trange, tqdm
 from KL_divergence_estimators.knn_divergence import (
     naive_estimator,
     scipy_estimator,
@@ -18,43 +19,41 @@ log = logging.getLogger("__main__")
 log.setLevel(logging.DEBUG)
 
 
-def plot_cov_KL_estim(conf, cov_list, n_tests):
-    KL_estim_dict = {
-        "naive": np.zeros(len(cov_list)),
-        "scipy": np.zeros(len(cov_list)),
-        "skl": np.zeros(len(cov_list)),
-        "skl_ef": np.zeros(len(cov_list)),
+def plot_cov_KL_estim(conf, params, KL_estim_list=["naive", "scipy", "skl", "skl_ef"]):
+    log.debug(f"KL_estim_list = {KL_estim_list}")
+
+    KL_estim_list = ["scipy"]
+    KL_estim_func_dict = {
+        "naive": lambda g, p: naive_estimator(g, p, k=5),
+        "scipy": lambda g, p: scipy_estimator(g, p, k=5),
+        "skl": lambda g, p: skl_estimator(g, p, k=5),
+        "skl_ef": lambda g, p: skl_efficient(g, p, k=5),
     }
 
-    for j, cov in enumerate(cov_list):
+    KL_estim_dict = {}
+    for key in KL_estim_list:
+        KL_estim_dict[key] = np.zeros(len(params["max_cov_list"]))
+
+    log.debug(f"KL_estim(max_cov) plot:")
+    for j, cov in tqdm(enumerate(params["max_cov_list"])):
         conf["max_cov"] = cov
         g_gen = partial(random_GMM_samples, conf)
         p_gen = partial(random_uniform_samples, conf, True)
-        for i in range(n_tests):
-            g_sample, g = g_gen()
-            p_sample, p = p_gen()
-            print(f"test = {i}")
-            KL_estim_dict["naive"][j] = (
-                KL_estim_dict["naive"][j]
-                + naive_estimator(g_sample, p_sample, k=5) / n_tests
-            )
-            KL_estim_dict["scipy"][j] = (
-                KL_estim_dict["scipy"][j]
-                + scipy_estimator(g_sample, p_sample, k=5) / n_tests
-            )
-            KL_estim_dict["skl"][j] = (
-                KL_estim_dict["skl"][j]
-                + skl_estimator(g_sample, p_sample, k=5) / n_tests
-            )
-            KL_estim_dict["skl_ef"][j] = (
-                KL_estim_dict["skl_ef"][j]
-                + skl_efficient(g_sample, p_sample, k=5) / n_tests
-            )
+        log.debug(f"cov = {cov}:")
+        for _ in trange(params["n_tests"]):
+            g_sample, _ = g_gen()
+            p_sample, _ = p_gen()
+
+            for key in KL_estim_list:
+                KL_estim_dict[key][j] = (
+                    KL_estim_dict[key][j]
+                    + KL_estim_func_dict[key](g_sample, p_sample) / params["n_tests"]
+                )
 
     fig, ax = plt.subplots(figsize=(12, 12))
     for key in KL_estim_dict:
         ax.plot(
-            cov_list,
+            params["max_cov_list"],
             KL_estim_dict[key],
             label=f"{key}",
         )
@@ -62,7 +61,9 @@ def plot_cov_KL_estim(conf, cov_list, n_tests):
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("KL_estimation between u and g", fontsize=26)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(
+        f"./main/results/KL_plots/{params['model']}_{params['f']}/KL_estim(max_cov).pdf"
+    )
     return True
 
 

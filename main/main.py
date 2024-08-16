@@ -11,7 +11,7 @@ from source.run import run
 def plot_max_cov(cfg: DictConfig):
 
     conf, params, methods_list, hyp_params_dict = read_configs(cfg)
-    plot_cov_KL_estim(conf, params["max_cov_list"], params["n_tests"])
+    plot_cov_KL_estim(conf, params)
 
     for max_cov in tqdm(params["max_cov_list"]):
         conf["max_cov"] = max_cov

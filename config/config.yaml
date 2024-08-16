@@ -8,8 +8,8 @@ conf:
 params:
   max_cov_list : [40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 100, 105, 120, 135, 150, 170]
   n_tests : 17
-  f : "linear"
-  model : "linear" 
+  f : "GMM"
+  model : "boosting" 
   n_splits : 1
 
 methods:
