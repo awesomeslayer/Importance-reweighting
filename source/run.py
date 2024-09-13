@@ -76,6 +76,7 @@ def run(
                     hyp_params_dict["estim_type"],
                     params,
                 )
+
             log.debug(f"test_gen_dict: {test_gen_dict}")
 
             params["model_gen"].fit(
@@ -126,16 +127,23 @@ def proceed_metrics(conf, params, methods_list):
     log.debug(f"y_err {y_err}")
     for x_method in x_methods_list:
         best_indexes = []
-        best_metrics_hyp = {"mape": [], "rmse": []}
+        best_metrics_hyp = {
+            "mape": [],
+            "rmse": [],
+            "mape_interval": [],
+            "rmse_interval": [],
+        }
 
         for n_bw, bw in enumerate(x_method.bw_list):
             for n_hyp, _ in enumerate(x_method.hyperparams_list):
-                x_method.test_metrics_dict["mape"][n_bw][n_hyp] = mape(
-                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err
-                )
-                x_method.test_metrics_dict["rmse"][n_bw][n_hyp] = rmse(
-                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err
-                )
+                (
+                    x_method.test_metrics_dict["mape"][n_bw][n_hyp],
+                    x_method.test_metrics_dict["mape_interval"][n_bw][n_hyp],
+                ) = mape(np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err)
+                (
+                    x_method.test_metrics_dict["rmse"][n_bw][n_hyp],
+                    x_method.test_metrics_dict["rmse_interval"][n_bw][n_hyp],
+                ) = rmse(np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err)
 
             log.debug(
                 f"x_method:{x_method.name}, bw:{bw}\n test_metrics_dict[mape][bw]:{x_method.test_metrics_dict['mape'][n_bw]}\n"
@@ -148,24 +156,44 @@ def proceed_metrics(conf, params, methods_list):
             best_metrics_hyp["mape"] += [
                 x_method.test_metrics_dict["mape"][n_bw][best_index]
             ]
+            best_metrics_hyp["mape_interval"] += [
+                x_method.test_metrics_dict["mape_interval"][n_bw][best_index]
+            ]
             best_metrics_hyp["rmse"] += [
                 x_method.test_metrics_dict["rmse"][n_bw][best_index]
             ]
-            log.debug(f"best_metrics_hyp[mape]: {best_metrics_hyp['mape']}")
+
+            best_metrics_hyp["rmse_interval"] += [
+                x_method.test_metrics_dict["rmse_interval"][n_bw][best_index]
+            ]
+
+            log.debug(
+                f"best_metrics_hyp[mape], interval: {best_metrics_hyp['mape']}, {best_metrics_hyp['mape_interval']}"
+            )
 
             plot_extr_hyp(conf, params, x_method, n_bw)
 
-        log.debug(f"final best_metrics_hyp[mape]:{best_metrics_hyp['mape']}\n")
+        log.debug(
+            f"final best_metrics_hyp[mape], interval:{best_metrics_hyp['mape']}, {best_metrics_hyp['mape_interval']}\n"
+        )
 
         best_index = np.argmin(best_metrics_hyp["mape"])
         log.debug(f"best index for bw_search: {best_index}")
 
         x_method.best_metrics_dict["mape"] += [best_metrics_hyp["mape"][best_index]]
+        x_method.best_metrics_dict["mape_interval"] += [
+            best_metrics_hyp["mape_interval"][best_index]
+        ]
         x_method.best_metrics_dict["rmse"] += [best_metrics_hyp["rmse"][best_index]]
+        x_method.best_metrics_dict["rmse_interval"] += [
+            best_metrics_hyp["rmse_interval"][best_index]
+        ]
+
         x_method.best_hyperparams_list += [
             x_method.hyperparams_list[best_indexes[best_index]]
         ]
         x_method.best_bw_list += [x_method.bw_list[best_index]]
+
         log.debug(
             f"adding best-best metrics and hyps for x_method: {x_method.name}:best metrics_dict:\n{x_method.best_metrics_dict}\n"
         )

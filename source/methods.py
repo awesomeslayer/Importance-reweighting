@@ -12,7 +12,12 @@ class IS_method:
         self.hyperparams_list = hyperparams_list
         self.bw_list = bw_list
 
-        self.best_metrics_dict = {"mape": [], "rmse": []}
+        self.best_metrics_dict = {
+            "mape": [],
+            "rmse": [],
+            "mape_interval": [],
+            "rmse_interval": [],
+        }
         self.best_hyperparams_list = []
         self.best_bw_list = []
 
@@ -25,7 +30,15 @@ class IS_method:
 
         self.test_metrics_dict = {
             "mape": [np.zeros(len(hyperparams_list)) for _ in range(len(bw_list))],
+            "mape_interval": [
+                np.empty(len(hyperparams_list), dtype=object)
+                for _ in range(len(bw_list))
+            ],
             "rmse": [np.zeros(len(hyperparams_list)) for _ in range(len(bw_list))],
+            "rmse_interval": [
+                np.empty(len(hyperparams_list), dtype=object)
+                for _ in range(len(bw_list))
+            ],
         }
         log.debug(f"inited with name = {name}")
 

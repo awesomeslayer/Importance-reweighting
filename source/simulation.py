@@ -117,11 +117,11 @@ def random_GP_func(config):
     kernel = GPy.kern.RBF(input_dim=2, variance=1.0, lengthscale=1.0)
     model = GPy.models.GPRegression(X, Y, kernel, noise_var=1e-10)
 
-    heatmap(
-        u_config,
-        lambda X: model.posterior_samples_f(X, full_cov=True, size=1),
-        n_points=50,
-    )
+    # heatmap(
+    #    u_config,
+    #    lambda X: model.posterior_samples_f(X, full_cov=True, size=1),
+    #    n_points=50,
+    # )
     return lambda X: model.posterior_samples_f(X, full_cov=True, size=1)
 
 

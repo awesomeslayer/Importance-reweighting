@@ -10,6 +10,12 @@ from KL_divergence_estimators.knn_divergence import (
     skl_estimator,
 )
 from source.KL_LSCV import squared_error
+from source.LCF import (
+    test_LCF,
+    estimate_lcf,
+    estimate_point_counts,
+    compute_normalized_auc,
+)
 from source.simulation import (
     random_GMM_samples,
     random_uniform_samples,
@@ -19,10 +25,13 @@ log = logging.getLogger("__main__")
 log.setLevel(logging.DEBUG)
 
 
+def plot_cov_RipleyK(conf, params):
+    return True
+
+
 def plot_cov_KL_estim(conf, params, KL_estim_list=["naive", "scipy", "skl", "skl_ef"]):
     log.debug(f"KL_estim_list = {KL_estim_list}")
 
-    KL_estim_list = ["scipy"]
     KL_estim_func_dict = {
         "naive": lambda g, p: naive_estimator(g, p, k=5),
         "scipy": lambda g, p: scipy_estimator(g, p, k=5),
@@ -64,6 +73,51 @@ def plot_cov_KL_estim(conf, params, KL_estim_list=["naive", "scipy", "skl", "skl
     plt.savefig(
         f"./main/results/KL_plots/{params['model']}_{params['f']}/KL_estim(max_cov).pdf"
     )
+    return True
+
+
+def plot_cov_LCF(conf, params, r_values=np.arange(0, 50, 1)):
+    test_LCF()
+
+    LCF_dict = {"p": [], "g": []}
+    for key in LCF_dict:
+        LCF_dict[key] = np.zeros(len(params["max_cov_list"]))
+
+    log.debug(f"LCF(max_cov) plot:")
+    for j, cov in tqdm(enumerate(params["max_cov_list"])):
+        conf["max_cov"] = cov
+        g_gen = partial(random_GMM_samples, conf)
+        p_gen = partial(random_uniform_samples, conf, True)
+        log.debug(f"cov = {cov}:")
+        for _ in trange(params["n_tests"]):
+            g_sample, _ = g_gen()
+            p_sample, _ = p_gen()
+
+            p_est_df = estimate_point_counts(p_sample, r_values)
+            g_est_df = estimate_point_counts(g_sample, r_values)
+
+            p_lcf_df = estimate_lcf(p_est_df, r=r_values)
+            g_lcf_df = estimate_lcf(g_est_df, r=r_values)
+
+            AUC_p = compute_normalized_auc(p_lcf_df, r_values)
+            AUC_g = compute_normalized_auc(g_lcf_df, r_values)
+
+            for key, LCF_AUC in zip(LCF_dict, (AUC_p, AUC_g)):
+                LCF_dict[key][j] = LCF_dict[key][j] + LCF_AUC / params["n_tests"]
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for key in LCF_dict:
+        ax.plot(
+            params["max_cov_list"],
+            LCF_dict[key],
+            label=f"{key}",
+        )
+    plt.legend(fontsize=26)
+    ax.set_xlabel("max_cov", fontsize=26)
+    ax.set_ylabel("LCF_AUC_average", fontsize=26)
+    plt.title(f"n_test = {params['n_tests']}")
+    plt.tight_layout()
+    plt.savefig(f"./main/results/LCF_plots/LCF(max_cov).pdf")
     return True
 
 
