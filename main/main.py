@@ -12,9 +12,9 @@ import numpy as np
 def plot_max_cov(cfg: DictConfig):
 
     conf, params, methods_list, hyp_params_dict = read_configs(cfg)
-    if hyp_params_dict["df_plots"]:
+    if hyp_params_dict["metrics_plots"]:
         plot_cov_LCF(conf, params)
-        plot_cov_KL_estim(conf, params, ["scipy"])
+        plot_cov_KL_estim(conf, params, [hyp_params_dict["estim_type"]])
 
     for max_cov in tqdm(params["max_cov_list"]):
         conf["max_cov"] = max_cov
@@ -55,22 +55,20 @@ def plot_max_cov(cfg: DictConfig):
     for methods_list, name in zip(methods_list_all, ["all", "no_estim", "estim", "KL"]):
         fig, ax = plt.subplots(figsize=(12, 12))
         for x_method in methods_list:
-            # Extract MAPE values and confidence intervals
             mape = x_method.best_metrics_dict["mape"]
             mape_interval = [
                 bound[1] - bound[0]
                 for bound in x_method.best_metrics_dict["mape_interval"]
             ]
 
-            # Plot with error bars for confidence intervals
             ax.errorbar(
                 params["max_cov_list"],
                 mape,
-                yerr=mape_interval,  # Error bars for confidence intervals
+                yerr=mape_interval,
                 label=f"{x_method.name}",
-                fmt="-o",  # Line style and marker
-                capsize=5,  # Size of the caps on error bars
-                elinewidth=2,  # Width of the error bars
+                fmt="-o",
+                capsize=5,
+                elinewidth=2,
             )
 
         plt.legend(fontsize=26)
@@ -79,6 +77,7 @@ def plot_max_cov(cfg: DictConfig):
         plt.savefig(
             f"./main/results/max_cov_plots/{params['model']}_{params['f']}_max_cov_{name}.pdf"
         )
+
         plt.tight_layout()
 
     return True

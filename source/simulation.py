@@ -72,7 +72,7 @@ def random_GMM_samples(config):
     :return: random GaussianMixture samples with center in [0; max_mu) X [0; max_mu) and covariances up to max_cov, log-density function
     """
     gmm = _GMM_gen(
-        config["max_mu"], config["max_cov"], config["n_components"], config["n_dim"]
+        config["max_mu"], config["max_cov"], config["n_GM_components"], config["n_dim"]
     )
     samples = gmm.sample(config["n_samples"])
 
@@ -131,10 +131,8 @@ def heatmap(config, fun, n_points=50):
     xx, yy = np.meshgrid(x_range, y_range)
     grid_points = np.c_[xx.ravel(), yy.ravel()]
 
-    # Predicting values for the grid points
     predicted_values = fun(grid_points).reshape(50, 50)
 
-    # Plotting the results
     plt.figure(figsize=(10, 6))
     plt.contourf(xx, yy, predicted_values, levels=20, cmap="viridis")
     plt.colorbar(label="Prediction")
@@ -142,7 +140,6 @@ def heatmap(config, fun, n_points=50):
     plt.savefig("./plots/results/fun_GP.pdf")
     plt.xlabel("X")
     plt.ylabel("Y")
-    # plt.show()
 
 
 def random_linear_func(config):

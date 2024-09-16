@@ -4,6 +4,7 @@ from scipy.special import logsumexp
 from sklearn.neighbors import KernelDensity
 from .KL_LSCV import KL_find_bw
 from scipy.stats import gaussian_kde
+import scipy.stats as stats
 
 log = logging.getLogger("__main__")
 
@@ -15,7 +16,7 @@ def density_estimation(conf, hyp_params_dict, test_gen_dict, bw):
             test_gen_dict["g_train"],
             test_gen_dict["p_train"],
             hyp_params_dict["beta"],
-            hyp_params_dict["KL_flag"],
+            hyp_params_dict["KL_enable"],
             hyp_params_dict["estim_type"],
         )
     else:
@@ -98,9 +99,30 @@ def ISE_clip(err, p, g, g_sample, eps, smooth_flag=True, thrhold=0.95, clip_step
     return logsumexp(clipped_array + err(g_sample)) - np.log(g_sample.shape[0])
 
 
-def rmse(x_err, y_err):
-    return np.sqrt(np.mean((x_err - y_err) ** 2))
+def rmse(x_err, y_err, confidence=0.95):
+    errors = [(x - y) ** 2 for x, y in zip(x_err, y_err)]
+    rmse_value = np.sqrt(np.mean(errors))
+
+    n = len(errors)
+    std_dev = np.sqrt(np.var(errors, ddof=1))
+    alpha = 1 - confidence
+    t_critical = stats.t.ppf(1 - alpha / 2, n - 1)
+    margin_of_error = t_critical * (std_dev / np.sqrt(n))
+
+    return rmse_value, (rmse_value - margin_of_error, rmse_value + margin_of_error)
 
 
-def mape(x_err, y_err):
-    return np.mean(100 * np.abs(x_err - y_err) / y_err)
+def mape(x_err, y_err, confidence=0.95):
+    errors = [abs(x - y) / y for x, y in zip(x_err, y_err) if y != 0]
+    mape_value = np.mean(errors) * 100
+
+    n = len(errors)
+    std_dev = np.sqrt(np.var(errors, ddof=1))
+    alpha = 1 - confidence
+    t_critical = stats.t.ppf(1 - alpha / 2, n - 1)
+    margin_of_error = t_critical * (std_dev / np.sqrt(n))
+
+    return mape_value, (
+        mape_value - margin_of_error * 100,
+        mape_value + margin_of_error * 100,
+    )

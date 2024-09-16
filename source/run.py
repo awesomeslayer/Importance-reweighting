@@ -13,7 +13,7 @@ from .simulation import (
     random_linear_func,
     random_uniform_samples,
 )
-from main.plots import plot_extr_bw, plot_extr_hyp, plot_KL
+from main.plots import plot_extr_bw, plot_extr_hyp, plot_KL_bw
 from .estimations import density_estimation, mape, rmse
 
 log = logging.getLogger("__main__")
@@ -65,14 +65,14 @@ def run(
             test_gen_dict["p_train"] = p_sample[train_idx]
             test_gen_dict["p_test"] = p_sample[test_idx]
 
-            if hyp_params_dict["KL_plot"] == True and n_test == 0 and n_fold == 0:
+            if hyp_params_dict["KL_bw_plot"] == True and n_test == 0 and n_fold == 0:
                 log.debug(f"for n_test: {n_test} and n_fold: {n_fold} getting plot:")
-                plot_KL(
+                plot_KL_bw(
                     conf,
                     test_gen_dict["g_train"],
                     test_gen_dict["p_train"],
                     hyp_params_dict["beta"],
-                    hyp_params_dict["KL_flag"],
+                    hyp_params_dict["KL_enable"],
                     hyp_params_dict["estim_type"],
                     params,
                 )
@@ -109,12 +109,12 @@ def run(
                             / params["n_splits"]
                         )
                 log.debug(f"got test_errors_list: {method.test_errors_list}")
-    proceed_metrics(conf, params, methods_list)
+    proceed_metrics(conf, params, methods_list, hyp_params_dict["confidence"])
 
     return True
 
 
-def proceed_metrics(conf, params, methods_list):
+def proceed_metrics(conf, params, methods_list, confidence):
 
     y_method = [method for method in methods_list if method.name == "MCE_p"][0]
     x_methods_list = [method for method in methods_list if method.name != "MCE_p"]
@@ -139,11 +139,15 @@ def proceed_metrics(conf, params, methods_list):
                 (
                     x_method.test_metrics_dict["mape"][n_bw][n_hyp],
                     x_method.test_metrics_dict["mape_interval"][n_bw][n_hyp],
-                ) = mape(np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err)
+                ) = mape(
+                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err, confidence
+                )
                 (
                     x_method.test_metrics_dict["rmse"][n_bw][n_hyp],
                     x_method.test_metrics_dict["rmse_interval"][n_bw][n_hyp],
-                ) = rmse(np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err)
+                ) = rmse(
+                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err, confidence
+                )
 
             log.debug(
                 f"x_method:{x_method.name}, bw:{bw}\n test_metrics_dict[mape][bw]:{x_method.test_metrics_dict['mape'][n_bw]}\n"

@@ -2,13 +2,13 @@ conf:
   max_mu : 100
   n_samples : 10000
   n_dim : 2 
-  n_components : 30
+  n_GM_components : 30
   n_GP_components : 5
 
 params:
   max_cov_list : [30, 35, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190]
-  n_tests : 150
-  f : "linear"
+  n_tests : 100
+  f : "GMM"
   model : "linear" 
   n_splits : 1
 
@@ -27,11 +27,12 @@ hyp_params_dict:
   bw_list : [5, "KL"]
   beta : 1
   estim_type : "sklearn"
-  KL_flag : True
-  KL_plot : False
-  df_plots: False
-  smooth_flag : True
   clip_thrhold : 0.25
   clip_step : 0.001
+  confidence : 0.95
+  KL_enable : True
+  KL_bw_plot : False
+  metrics_plots: False
+  smooth_flag : True
 
   

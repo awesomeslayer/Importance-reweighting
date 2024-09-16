@@ -25,10 +25,6 @@ log = logging.getLogger("__main__")
 log.setLevel(logging.DEBUG)
 
 
-def plot_cov_RipleyK(conf, params):
-    return True
-
-
 def plot_cov_KL_estim(conf, params, KL_estim_list=["naive", "scipy", "skl", "skl_ef"]):
     log.debug(f"KL_estim_list = {KL_estim_list}")
 
@@ -121,7 +117,7 @@ def plot_cov_LCF(conf, params, r_values=np.arange(0, 50, 1)):
     return True
 
 
-def plot_KL(
+def plot_KL_bw(
     conf,
     g_sample,
     p_sample,
