@@ -15,6 +15,7 @@ from source.LCF import (
     estimate_lcf,
     estimate_point_counts,
     compute_normalized_auc,
+    plot_lcf,
 )
 from source.simulation import (
     random_GMM_samples,
@@ -72,7 +73,8 @@ def plot_cov_KL_estim(conf, params, KL_estim_list=["naive", "scipy", "skl", "skl
     return True
 
 
-def plot_cov_LCF(conf, params, r_values=np.arange(0, 50, 1)):
+def plot_cov_LCF(conf, params, n_tests=5):
+    r_values = np.arange(0, 50, 0.5)
     test_LCF()
 
     LCF_dict = {"p": [], "g": []}
@@ -85,7 +87,7 @@ def plot_cov_LCF(conf, params, r_values=np.arange(0, 50, 1)):
         g_gen = partial(random_GMM_samples, conf)
         p_gen = partial(random_uniform_samples, conf, True)
         log.debug(f"cov = {cov}:")
-        for _ in trange(params["n_tests"]):
+        for i in trange(n_tests):
             g_sample, _ = g_gen()
             p_sample, _ = p_gen()
 
@@ -98,8 +100,16 @@ def plot_cov_LCF(conf, params, r_values=np.arange(0, 50, 1)):
             AUC_p = compute_normalized_auc(p_lcf_df, r_values)
             AUC_g = compute_normalized_auc(g_lcf_df, r_values)
 
+            plot_lcf(
+                g_lcf_df, title=f"LCF_g_sample_cov({cov})_{i}", AUC=AUC_g, dir="/all"
+            )
+
+            plot_lcf(
+                p_lcf_df, title=f"LCF_p_sample_cov({cov})_{i}", AUC=AUC_p, dir="/all"
+            )
+
             for key, LCF_AUC in zip(LCF_dict, (AUC_p, AUC_g)):
-                LCF_dict[key][j] = LCF_dict[key][j] + LCF_AUC / params["n_tests"]
+                LCF_dict[key][j] = LCF_dict[key][j] + LCF_AUC / n_tests
 
     fig, ax = plt.subplots(figsize=(12, 12))
     for key in LCF_dict:
@@ -111,7 +121,7 @@ def plot_cov_LCF(conf, params, r_values=np.arange(0, 50, 1)):
     plt.legend(fontsize=26)
     ax.set_xlabel("max_cov", fontsize=26)
     ax.set_ylabel("LCF_AUC_average", fontsize=26)
-    plt.title(f"n_test = {params['n_tests']}")
+    plt.title(f"n_test = {n_tests}")
     plt.tight_layout()
     plt.savefig(f"./main/results/LCF_plots/LCF(max_cov).pdf")
     return True
