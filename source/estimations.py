@@ -21,18 +21,21 @@ def density_estimation(conf, hyp_params_dict, test_gen_dict, bw):
         )
     else:
         bw_temp = bw
-    log.debug(f"bw = {bw}, bw_temp = {bw_temp}")
 
     if hyp_params_dict["estim_type"] == "sklearn":
         kde = KernelDensity(kernel="gaussian", bandwidth=bw_temp).fit(
             test_gen_dict["g_train"]
         )
         g_estim = lambda X: kde.score_samples(X)
+        bw_temp = kde.bandwidth_
+
     elif hyp_params_dict["estim_type"] == "scipy":
         kde = gaussian_kde(test_gen_dict["g_train"].T, bw_method=bw_temp)
         g_estim = lambda X: np.log(kde.evaluate(X.T))
-
-    return g_estim
+        bw_temp = kde.covariance_factor()
+    
+    log.debug(f"bw = {bw}, bw_temp = {bw_temp}")
+    return g_estim, bw_temp
 
 
 def ISE(err, p, g, g_sample):
@@ -114,7 +117,10 @@ def rmse(x_err, y_err, confidence=0.95):
 
 def mape(x_err, y_err, confidence=0.95):
     errors = [abs(x - y) / y for x, y in zip(x_err, y_err) if y != 0]
-    mape_value = np.mean(errors) * 100
+    
+    mape_value = min(np.mean(errors) * 100, 200)
+    if np.isnan(mape_value):
+        mape_value = 200
 
     n = len(errors)
     std_dev = np.sqrt(np.var(errors, ddof=1))
@@ -123,6 +129,6 @@ def mape(x_err, y_err, confidence=0.95):
     margin_of_error = t_critical * (std_dev / np.sqrt(n))
 
     return mape_value, (
-        mape_value - margin_of_error * 100,
-        mape_value + margin_of_error * 100,
+        max(mape_value - margin_of_error * 100, -100),
+        min(mape_value + margin_of_error * 100, 100)
     )

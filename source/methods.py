@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-from source.estimations import MCE, ISE, ISE_deg, ISE_clip
+from source.estimations import MCE, ISE, ISE_deg, ISE_clip, density_estimation
 
 log = logging.getLogger("__main__")
 
@@ -92,7 +92,7 @@ class IS_method:
 
             log.debug(f"name = {self.name}, error = {error} ]")
             return error
-
+    
         if (
             self.name == "ISE"
             or self.name == "ISE_estim"

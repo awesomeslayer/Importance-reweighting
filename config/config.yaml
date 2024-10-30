@@ -1,20 +1,23 @@
 conf:
   max_mu : 100
-  n_samples : 10000
+  n_samples : 1000
   n_dim : 2 
-  n_GM_components : 30
+  n_GM_components : 2
   n_GP_components : 5
+  kappa : 0.1
+  mu_offspring : 10
 
 params:
-  max_cov_list : [30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190]
-  n_tests : 100
-  f : "GMM"
+  max_cov_list : [0.1, 0.3, 0.5, 1, 1.5, 2, 2.5, 3, 3.5,]
+  n_tests : 10
+  f : "linear"
   model : "linear" 
+  samples : "Thomas"
   n_splits : 1
 
 methods:
   x_estim : ["ISE_estim"] 
-  x_no_estim : ["MCE_g", "ISE"]
+  x_no_estim : ["MCE_g"]
   y : ["MCE_p"]
 
 hyp_dict:
@@ -24,14 +27,13 @@ hyp_dict:
   ISE_estim_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99999]
 
 hyp_params_dict:
-  bw_list : [5, "KL"]
+  bw_list : [1,]
   beta : 1
-  estim_type : "sklearn"
+  estim_type : "scipy"
   clip_thrhold : 0.25
   clip_step : 0.001
   confidence : 0.95
   KL_enable : True
-  KL_bw_plot : False
   metrics_plots: False
   smooth_flag : True
 

@@ -6,6 +6,9 @@ import numpy as np
 from scipy.linalg import cholesky, solve_triangular
 from sklearn.mixture import GaussianMixture
 
+from scipy.stats import poisson
+from scipy.spatial.distance import pdist, squareform
+
 np.seterr(divide="ignore")
 np.random.seed(42)
 
@@ -170,4 +173,92 @@ def visualize_GMM_config(config, alpha):
 
     ax.set_xlim((0, config["max_mu"]))
     ax.set_ylim((0, config["max_mu"]))
+    plt.show()
+
+def random_thomas_samples(config):
+    """
+    Generate Thomas cluster process samples
+    
+    :param config: dictionary with parameters
+        n_samples: exact number of points to generate
+        max_mu: window size
+        n_dim: dimension of the space (typically 2)
+        kappa: parent intensity (default 5/(24*1000))
+        mu_offspring: mean offspring per cluster (default 120)
+        sigma: standard deviation of offspring displacement (default 7.5)
+    :return: samples array, log-density function
+    """
+    kappa = config.get('kappa', 5/(24*1000))
+    mu_offspring = config.get('mu_offspring', 120)
+    sigma = config.get('max_cov', 7.5)
+    
+    points = []
+    while len(points) < config['n_samples']:
+        # Generate parent points - increase number of parents if needed
+        n_parents = max(1, poisson.rvs(kappa * config['max_mu']**2))
+        parent_points = np.random.uniform(0, config['max_mu'], 
+                                        (n_parents, config['n_dim']))
+        
+        for parent in parent_points:
+            if len(points) >= config['n_samples']:
+                break
+                
+            # Generate number of offspring for this parent
+            n_offspring = poisson.rvs(mu_offspring)
+            
+            if n_offspring > 0:
+                # Generate offspring positions with border handling
+                displacement = np.random.normal(0, sigma, (n_offspring, config['n_dim']))
+                offspring = parent + displacement
+                
+                # Handle boundary conditions by reflection
+                for i in range(config['n_dim']):
+                    # Reflect points that are outside the boundary
+                    offspring[:, i] = np.where(offspring[:, i] < 0, 
+                                             -offspring[:, i], 
+                                             offspring[:, i])
+                    offspring[:, i] = np.where(offspring[:, i] > config['max_mu'],
+                                             2*config['max_mu'] - offspring[:, i],
+                                             offspring[:, i])
+                
+                points.extend(offspring)
+    
+    # Convert to numpy array and trim to exact number of points
+    points = np.array(points)[:config['n_samples']]
+    
+    # Approximate log-density function for Thomas process
+    def log_density(X):
+        if len(X.shape) == 1:
+            X = X.reshape(1, -1)
+            
+        density = np.zeros(len(X))
+        for parent in parent_points:
+            # Calculate Gaussian density contribution from each parent
+            diff = X - parent
+            dist_sq = np.sum(diff**2, axis=1)
+            density += np.exp(-dist_sq / (2 * sigma**2)) / (2 * np.pi * sigma**2)
+        
+        return np.log(kappa * mu_offspring * density)
+
+    return points, log_density
+
+# Example usage
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    
+    config = {
+        'n_samples': 10000,
+        'max_mu': 100,
+        'n_dim': 2,
+        
+    }
+    
+    # Generate and visualize Thomas pattern
+    samples, _ = random_thomas_samples(config)
+    
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.scatter(samples[:, 0], samples[:, 1], alpha=0.5)
+    ax.set_xlim((0, config['max_mu']))
+    ax.set_ylim((0, config['max_mu']))
+    ax.set_title('Thomas Point Pattern')
     plt.show()

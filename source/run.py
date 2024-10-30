@@ -12,8 +12,9 @@ from .simulation import (
     random_GP_func,
     random_linear_func,
     random_uniform_samples,
+    random_thomas_samples
 )
-from main.plots import plot_extr_bw, plot_extr_hyp, plot_KL_bw
+from main.plots import plot_extr_bw, plot_extr_hyp
 from .estimations import density_estimation, mape, rmse
 
 log = logging.getLogger("__main__")
@@ -33,9 +34,11 @@ def run(
 
     models = {"linear": DummyModel(), "boosting": GradientBoostingRegressor()}
 
+    samples = {'GMM' : random_GMM_samples, 'Thomas' : random_thomas_samples}
+
     params["f_gen"] = f_gens[params["f"]]
     params["model_gen"] = models[params["model"]]
-    params["g_gen"] = partial(random_GMM_samples, conf)
+    params["g_gen"] = partial(samples[params['samples']], conf)
     params["p_gen"] = partial(random_uniform_samples, conf, True)
 
     kf = (
@@ -48,6 +51,10 @@ def run(
         for n_bw, _ in enumerate(method.bw_list):
             for n_hyp, _ in enumerate(method.hyperparams_list):
                 method.test_errors_list[n_bw][n_hyp] = np.zeros(params["n_tests"])
+    
+    bw_estim_dict = {}
+    for bw in hyp_params_dict['bw_list']:
+        bw_estim_dict[bw] = 0
 
     for n_test in trange(params["n_tests"]):
         test_gen_dict = {}
@@ -57,25 +64,13 @@ def run(
         g_sample, g_estim_dict["g"] = params["g_gen"]()
         p_sample, test_gen_dict["p"] = params["p_gen"]()
         test_gen_dict["model"] = params["model_gen"]
-
+        
         for n_fold, (train_idx, test_idx) in enumerate(kf.split(g_sample)):
 
             test_gen_dict["g_train"] = g_sample[train_idx]
             test_gen_dict["g_test"] = g_sample[test_idx]
             test_gen_dict["p_train"] = p_sample[train_idx]
             test_gen_dict["p_test"] = p_sample[test_idx]
-
-            if hyp_params_dict["KL_bw_plot"] == True and n_test == 0 and n_fold == 0:
-                log.debug(f"for n_test: {n_test} and n_fold: {n_fold} getting plot:")
-                plot_KL_bw(
-                    conf,
-                    test_gen_dict["g_train"],
-                    test_gen_dict["p_train"],
-                    hyp_params_dict["beta"],
-                    hyp_params_dict["KL_enable"],
-                    hyp_params_dict["estim_type"],
-                    params,
-                )
 
             log.debug(f"test_gen_dict: {test_gen_dict}")
 
@@ -88,10 +83,11 @@ def run(
             )
 
             for bw in hyp_params_dict["bw_list"]:
-                g_estim_dict[bw] = density_estimation(
+                g_estim_dict[bw], bw_temp = density_estimation(
                     conf, hyp_params_dict, test_gen_dict, bw
                 )
-
+                bw_estim_dict[bw] += bw_temp/(params["n_tests"] * params['n_splits'])
+            
             log.debug(f"n_test: {n_test},\n test/train idx:{train_idx},\n {test_idx}\n")
             log.debug(f"g_estim_dict:\n {g_estim_dict}\n")
 
@@ -109,13 +105,12 @@ def run(
                             / params["n_splits"]
                         )
                 log.debug(f"got test_errors_list: {method.test_errors_list}")
-    proceed_metrics(conf, params, methods_list, hyp_params_dict["confidence"])
-
+    
+    proceed_metrics(conf, params, methods_list, hyp_params_dict, bw_estim_dict)
+   
     return True
 
-
-def proceed_metrics(conf, params, methods_list, confidence):
-
+def proceed_metrics(conf, params, methods_list, hyp_params_dict, bw_estim_dict):
     y_method = [method for method in methods_list if method.name == "MCE_p"][0]
     x_methods_list = [method for method in methods_list if method.name != "MCE_p"]
 
@@ -140,17 +135,17 @@ def proceed_metrics(conf, params, methods_list, confidence):
                     x_method.test_metrics_dict["mape"][n_bw][n_hyp],
                     x_method.test_metrics_dict["mape_interval"][n_bw][n_hyp],
                 ) = mape(
-                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err, confidence
+                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err, hyp_params_dict['confidence']
                 )
                 (
                     x_method.test_metrics_dict["rmse"][n_bw][n_hyp],
                     x_method.test_metrics_dict["rmse_interval"][n_bw][n_hyp],
                 ) = rmse(
-                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err, confidence
+                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err, hyp_params_dict['confidence']
                 )
 
             log.debug(
-                f"x_method:{x_method.name}, bw:{bw}\n test_metrics_dict[mape][bw]:{x_method.test_metrics_dict['mape'][n_bw]}\n"
+                f"x_method:{x_method.name}, bw:{bw}\n test_metrics_dict[mape][bw]:\n{x_method.test_metrics_dict['mape'][n_bw]}\n"
             )
 
             best_index = np.argmin(x_method.test_metrics_dict["mape"][n_bw])
@@ -172,13 +167,13 @@ def proceed_metrics(conf, params, methods_list, confidence):
             ]
 
             log.debug(
-                f"best_metrics_hyp[mape], interval: {best_metrics_hyp['mape']}, {best_metrics_hyp['mape_interval']}"
+                f"best_metrics_hyp[mape]:\n{best_metrics_hyp['mape']}\ninterval:\n{best_metrics_hyp['mape_interval']}\n"
             )
 
             plot_extr_hyp(conf, params, x_method, n_bw)
 
         log.debug(
-            f"final best_metrics_hyp[mape], interval:{best_metrics_hyp['mape']}, {best_metrics_hyp['mape_interval']}\n"
+            f"final best_metrics_hyp[mape]:\n{best_metrics_hyp['mape']},\n interval:\n {best_metrics_hyp['mape_interval']}\n"
         )
 
         best_index = np.argmin(best_metrics_hyp["mape"])
@@ -197,12 +192,12 @@ def proceed_metrics(conf, params, methods_list, confidence):
             x_method.hyperparams_list[best_indexes[best_index]]
         ]
         x_method.best_bw_list += [x_method.bw_list[best_index]]
-
+        
         log.debug(
-            f"adding best-best metrics and hyps for x_method: {x_method.name}:best metrics_dict:\n{x_method.best_metrics_dict}\n"
+            f"adding best-best metrics and hyps for x_method: {x_method.name}:\nbest metrics_dict:\n{x_method.best_metrics_dict}\n"
         )
         log.debug(
-            f"best_hyperparams_list:{x_method.best_hyperparams_list},\n best_bw_list:{x_method.best_bw_list}"
+            f"best_hyperparams_list:\n{x_method.best_hyperparams_list},\n best_bw_list:{x_method.best_bw_list}"
         )
 
         plot_extr_bw(conf, params, best_metrics_hyp["mape"], x_method)

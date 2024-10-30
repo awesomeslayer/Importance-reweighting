@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from .plots import plot_cov_KL_estim, plot_cov_LCF
+from .plots import plot_cov_KL_estim, plot_cov_LCF, plot_cov_KS, plot_cov_bw
 from .read_configs import read_configs
 import hydra
 from tqdm import tqdm
@@ -7,12 +7,18 @@ from omegaconf import DictConfig
 from source.run import run
 
 
+
 @hydra.main(version_base=None, config_path="../config", config_name="config")
 def plot_max_cov(cfg: DictConfig):
 
     conf, params, methods_list, hyp_params_dict = read_configs(cfg)
+    
+        
     if hyp_params_dict["metrics_plots"]:
         plot_cov_LCF(conf, params)
+
+        plot_cov_bw(conf, params, hyp_params_dict)
+        plot_cov_KS(conf, params, n_tests=60)
         plot_cov_KL_estim(conf, params, ["skl"])
 
     for max_cov in tqdm(params["max_cov_list"]):
