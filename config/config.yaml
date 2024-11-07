@@ -11,15 +11,15 @@ conf:
     
 
 params:
-  max_cov_list : [3, 7, 12, 25, 45, 60, 90 , 130]
-  n_tests : 30
+  max_cov_list : [3, 7, 15, 25, 50, 100]
+  n_tests : 5
   f : "linear"
   model : "linear" 
   samples : "Matern"
   n_splits : 1
 
 methods:
-  x_estim : ["ISE_estim", 'ISE_uni', 'ISE_estim_clip', 'ISE_deg'] 
+  x_estim : ["ISE_estim"] 
   x_no_estim : ["MCE_g"]
   y : ["MCE_p"]
 
@@ -36,7 +36,7 @@ hyp_params_dict:
   clip_thrhold : 0.25
   clip_step : 0.001
   confidence : 0.95
-  KL_enable : True
+  KL_enable : False 
   metrics_plots: False
   smooth_flag : True
   errorbar_flag : False
