@@ -7,6 +7,7 @@ from scipy.stats import kstest
 from scipy.spatial.distance import cdist
 from sklearn.model_selection import KFold, ShuffleSplit
 from sklearn.ensemble import GradientBoostingRegressor
+import os
 
 from scipy.stats import gaussian_kde
 
@@ -74,6 +75,9 @@ def plot_cov_KL_estim(conf, params, KL_estim_list=["naive", "scipy", "skl", "skl
                     KL_estim_dict[key][j]
                     + KL_estim_func_dict[key](g_sample, p_sample) / params["n_tests"]
                 )
+    
+    os.makedirs("./main/results/KL_plots/", exist_ok=True)
+    os.makedirs(f"./main/results/KL_plots/{params['model']}_{params['f']}", exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(12, 12))
     for key in KL_estim_dict:
@@ -162,6 +166,9 @@ def plot_cov_KS(conf, params, n_tests=5):
         KS_dict["2d"]["p"][j] = cumulative_ks_2d_p / n_tests
         KS_dict["2d"]["g"][j] = cumulative_ks_2d_g / n_tests
     
+    os.makedirs("./main/results/KS_plots/", exist_ok=True)
+    os.makedirs(f"./main/results/KS_plots/{params['samples']}", exist_ok=True)
+
     plt.figure(figsize=(16, 10))
 
     plt.subplot(2, 2, 1)
@@ -223,6 +230,9 @@ def plot_cov_LCF(conf, params, n_tests=5):
             AUC_p = compute_normalized_auc(p_lcf_df, r_values, rmin = rmax/10, rmax = rmax)
             AUC_g = compute_normalized_auc(g_lcf_df, r_values, rmin = rmax/10, rmax = rmax)
 
+            os.makedirs("./main/results/LCF_plots/", exist_ok=True)
+            os.makedirs(f"./main/results/LCF_plots/{params['samples']}", exist_ok=True)
+
             plot_lcf(
                 g_lcf_df, title=f"LCF_g_sample_cov({cov})_{i}", AUC=AUC_g, dir="/all"
             )
@@ -233,6 +243,8 @@ def plot_cov_LCF(conf, params, n_tests=5):
 
             for key, LCF_AUC in zip(LCF_dict, (AUC_p, AUC_g)):
                 LCF_dict[key][j] = LCF_dict[key][j] + LCF_AUC / n_tests
+
+    os.makedirs(f"./main/results/LCF_plots/{params['samples']}", exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(12, 12))
     for key in LCF_dict:

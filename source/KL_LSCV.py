@@ -49,7 +49,7 @@ def squared_error(h, conf, g_sample, p_sample, beta, flag, estim_type):
         integral = dblquad(f_n_squared, 0, conf["max_mu"], 0, conf["max_mu"])
         sub = f_sub_sample_mean()
         cv = integral[0] - 2 * sub - uniform_sum
-        log.debug(f"sub = {sub}, uniform_sum = {uniform_sum}")
+        log.debug(f"integral = {integral[0]}, sub = {sub}, uniform_sum = {uniform_sum}")
     log.debug(f"for h = {h}: cv = {cv}")
     return cv
 
