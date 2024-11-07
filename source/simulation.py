@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.linalg import cholesky, solve_triangular
 from sklearn.mixture import GaussianMixture
-
+import os
 from scipy.stats import poisson
 from scipy.spatial.distance import pdist, squareform
 
@@ -166,6 +166,7 @@ def random_gaussian_mixture_func(config):
 
 
 def visualize_pattern(samples, config, name, alpha = 0.7):
+    os.makedirs(f"./main/results/patterns/{name}", exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.scatter(samples[:, 0], samples[:, 1], alpha=alpha)
