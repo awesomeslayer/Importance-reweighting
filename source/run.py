@@ -12,7 +12,9 @@ from .simulation import (
     random_GP_func,
     random_linear_func,
     random_uniform_samples,
-    random_thomas_samples
+    random_thomas_samples,
+    random_matern_samples,
+    visualize_pattern
 )
 from main.plots import plot_extr_bw, plot_extr_hyp
 from .estimations import density_estimation, mape, rmse
@@ -34,7 +36,7 @@ def run(
 
     models = {"linear": DummyModel(), "boosting": GradientBoostingRegressor()}
 
-    samples = {'GMM' : random_GMM_samples, 'Thomas' : random_thomas_samples}
+    samples = {'GMM' : random_GMM_samples, 'Thomas' : random_thomas_samples, 'Matern' : random_matern_samples}
 
     params["f_gen"] = f_gens[params["f"]]
     params["model_gen"] = models[params["model"]]
@@ -64,6 +66,13 @@ def run(
         g_sample, g_estim_dict["g"] = params["g_gen"]()
         p_sample, test_gen_dict["p"] = params["p_gen"]()
         test_gen_dict["model"] = params["model_gen"]
+
+        if(n_test == 0):
+            in_bounds = np.all((g_sample >= 0) & (g_sample <= conf['max_mu']), axis=1)
+            log.debug(f"Number of g_sample in bounds: {np.sum(in_bounds)}")
+            visualize_pattern(g_sample, conf, params['samples'], alpha = 0.7)
+            visualize_pattern(p_sample, conf, 'uniform', alpha = 0.7)
+    
         
         for n_fold, (train_idx, test_idx) in enumerate(kf.split(g_sample)):
 

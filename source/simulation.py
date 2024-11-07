@@ -165,15 +165,14 @@ def random_gaussian_mixture_func(config):
     return g
 
 
-def visualize_GMM_config(config, alpha):
-    GMM, _ = random_GMM_samples(config)
+def visualize_pattern(samples, config, name, alpha = 0.7):
 
     fig, ax = plt.subplots(figsize=(12, 12))
-    ax.scatter(GMM[:, 0], GMM[:, 1], alpha=alpha)
-
+    ax.scatter(samples[:, 0], samples[:, 1], alpha=alpha)
+    ax.set_title(f"{name}")
     ax.set_xlim((0, config["max_mu"]))
     ax.set_ylim((0, config["max_mu"]))
-    plt.show()
+    plt.savefig(f"./main/results/patterns/{name}/{config['max_cov']}.pdf")
 
 def random_thomas_samples(config):
     """
@@ -189,8 +188,8 @@ def random_thomas_samples(config):
     :return: samples array, log-density function
     """
     kappa = config.get('kappa', 5/(24*1000))
-    mu_offspring = config.get('mu_offspring', 120)
-    sigma = config.get('max_cov', 7.5)
+    mu_offspring = config.get('max_cov', 120)
+    sigma = config.get('sigma', 7.5)
     
     points = []
     while len(points) < config['n_samples']:
@@ -239,26 +238,105 @@ def random_thomas_samples(config):
             density += np.exp(-dist_sq / (2 * sigma**2)) / (2 * np.pi * sigma**2)
         
         return np.log(kappa * mu_offspring * density)
-
+    
     return points, log_density
 
-# Example usage
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
+
+def random_matern_samples(config):
+    """
+    Generate Matern cluster process samples with log-density function.
     
-    config = {
-        'n_samples': 10000,
-        'max_mu': 100,
-        'n_dim': 2,
+    :param config: dictionary with parameters
+        n_samples: number of points to generate
+        x_min: minimum x-value of the simulation window
+        x_max: maximum x-value of the simulation window
+        y_min: minimum y-value of the simulation window
+        lambda_parent: density of parent Poisson point process
+        lambda_daughter: mean number of points in each cluster
+        radius_cluster: radius of cluster disks for daughter points
+    :return: samples array (x, y coordinates of points), log-density function
+    """
+    
+    # Simulation window parameters
+    x_min = 0
+    x_max = config['max_mu']
+    y_min = 0
+    y_max = config['max_mu']
+    
+    # Parameters for the parent and daughter point processes
+    lambda_parent = config['lambda_parent']
+    lambda_daughter = config['lambda_daughter']
+    radius_cluster = config['max_cov']
+    
+    # Extended simulation windows parameters
+    r_ext = radius_cluster
+    x_min_ext = x_min - r_ext
+    x_max_ext = x_max + r_ext
+    y_min_ext = y_min - r_ext
+    y_max_ext = y_max + r_ext
+    
+    # Rectangle dimensions
+    x_delta_ext = x_max_ext - x_min_ext
+    y_delta_ext = y_max_ext - y_min_ext
+    area_total_ext = x_delta_ext * y_delta_ext
+    
+    # Container for final points
+    points = []
+    
+    while len(points) < config['n_samples']:
+        # Simulate Poisson point process for the parents
+        numb_points_parent = np.random.poisson(area_total_ext * lambda_parent)
         
-    }
+        # x and y coordinates of Poisson points for the parent
+        xx_parent = x_min_ext + x_delta_ext * np.random.uniform(0, 1, numb_points_parent)
+        yy_parent = y_min_ext + y_delta_ext * np.random.uniform(0, 1, numb_points_parent)
+        
+        # Simulate Poisson point process for the daughters (final point process)
+        numb_points_daughter = np.random.poisson(lambda_daughter, numb_points_parent)
+        numb_points = sum(numb_points_daughter)  # total number of points
+        
+        # Generate the (relative) locations in polar coordinates
+        theta = 2 * np.pi * np.random.uniform(0, 1, numb_points)  # angular coordinates
+        rho = radius_cluster * np.sqrt(np.random.uniform(0, 1, numb_points))  # radial coordinates
+        
+        # Convert from polar to Cartesian coordinates
+        xx0 = rho * np.cos(theta)
+        yy0 = rho * np.sin(theta)
+        
+        # Replicate parent points (centers of disks/clusters)
+        xx = np.repeat(xx_parent, numb_points_daughter)
+        yy = np.repeat(yy_parent, numb_points_daughter)
+        
+        # Translate points (parents are the centers of the clusters)
+        xx = xx + xx0
+        yy = yy + yy0
+        
+        # Thin points if outside the simulation window
+        boole_inside = ((xx >= x_min) & (xx <= x_max) & (yy >= y_min) & (yy <= y_max))
+        
+        # Retain points inside the simulation window
+        xx = xx[boole_inside]
+        yy = yy[boole_inside]
+        
+        # Extend the final points list until reaching the target number of samples
+        new_points = np.vstack((xx, yy)).T
+        points.extend(new_points)
     
-    # Generate and visualize Thomas pattern
-    samples, _ = random_thomas_samples(config)
+    # Convert to numpy array and trim to the exact number of points
+    points = np.array(points)[:config['n_samples']]
     
-    fig, ax = plt.subplots(figsize=(12, 12))
-    ax.scatter(samples[:, 0], samples[:, 1], alpha=0.5)
-    ax.set_xlim((0, config['max_mu']))
-    ax.set_ylim((0, config['max_mu']))
-    ax.set_title('Thomas Point Pattern')
-    plt.show()
+    # Approximate log-density function for the Matern process
+    def log_density(X):
+        if len(X.shape) == 1:
+            X = X.reshape(1, -1)
+        
+        density = np.zeros(len(X))
+        for parent_x, parent_y in zip(xx_parent, yy_parent):
+            # Calculate Gaussian density contribution from each parent cluster
+            diff_x = X[:, 0] - parent_x
+            diff_y = X[:, 1] - parent_y
+            dist_sq = diff_x**2 + diff_y**2
+            density += np.exp(-dist_sq / (2 * radius_cluster**2)) / (2 * np.pi * radius_cluster**2)
+        
+        return np.log(lambda_parent * lambda_daughter * density)
+    return points, log_density

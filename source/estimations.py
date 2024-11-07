@@ -129,6 +129,6 @@ def mape(x_err, y_err, confidence=0.95):
     margin_of_error = t_critical * (std_dev / np.sqrt(n))
 
     return mape_value, (
-        max(mape_value - margin_of_error * 100, -100),
-        min(mape_value + margin_of_error * 100, 100)
+        mape_value - margin_of_error * 100,
+        mape_value + margin_of_error * 100
     )

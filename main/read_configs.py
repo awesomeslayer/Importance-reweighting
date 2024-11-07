@@ -14,8 +14,10 @@ def read_configs(cfg):
     hyp_dict = OmegaConf.to_container(cfg["hyp_dict"])
     hyp_params_dict = OmegaConf.to_container(cfg["hyp_params_dict"])
     
-    #hyp_dict["ISE_uni"] = np.linspace(0, 2, 100)
-    params['max_cov_list'] = np.linspace(0.01, 40, 50)
+    hyp_dict["ISE_uni"] = np.linspace(0, 1, 100)
+    hyp_dict["ISE_deg"] = np.linspace(0, 3, 100)
+    hyp_dict["ISE_clip"] = np.linspace(0.0001, 0.1, 50) + np.linspace(0.1, 1, 50)
+
     log.info(
         f"Starting configs:\n conf:\n{conf},\n params:\n{params},\n method_names:\n{methods_names},\n hyp_dict:\n{hyp_dict},\n hyp_params_dict:\n{hyp_params_dict}"
     )

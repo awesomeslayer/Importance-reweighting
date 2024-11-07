@@ -34,7 +34,8 @@ from source.simulation import (
     random_GP_func,
     random_linear_func,
     random_uniform_samples,
-    random_thomas_samples
+    random_thomas_samples,
+    random_matern_samples
 )
 
 log = logging.getLogger("__main__")
@@ -106,7 +107,7 @@ def energy_distance_2d(sample1, sample2):
 
 def plot_cov_KS(conf, params, n_tests=5):
     KS_dict = {"p": [], "g": [], "2d": {"p": [], "g": []}}
-    samples = {'GMM' : random_GMM_samples, 'Thomas' : random_thomas_samples}
+    samples = {'GMM' : random_GMM_samples, 'Thomas' : random_thomas_samples, 'Matern' : random_matern_samples}
 
     for key in KS_dict:
         if key != "2d":
@@ -188,7 +189,7 @@ def plot_cov_KS(conf, params, n_tests=5):
     plt.legend()
 
     plt.tight_layout()
-    plt.savefig(f"./main/results/KS_plots/KS(max_cov)_2D.pdf")
+    plt.savefig(f"./main/results/KS_plots/{params['samples']}/KS(max_cov)_2D.pdf")
     plt.show()
     
     return True
@@ -197,7 +198,7 @@ def plot_cov_LCF(conf, params, n_tests=5):
     rmax = 0.188*conf['max_mu']
     r_values = np.arange(0, rmax, 0.1)
     test_LCF()
-    samples = {'GMM' : random_GMM_samples, 'Thomas' : random_thomas_samples}
+    samples = {'GMM' : random_GMM_samples, 'Thomas' : random_thomas_samples, 'Matern' : random_matern_samples}
 
     LCF_dict = {"p": [], "g": []}
     for key in LCF_dict:
@@ -245,7 +246,7 @@ def plot_cov_LCF(conf, params, n_tests=5):
     ax.set_ylabel("LCF_AUC_average", fontsize=26)
     plt.title(f"n_test = {n_tests}")
     plt.tight_layout()
-    plt.savefig(f"./main/results/LCF_plots/LCF(max_cov).pdf")
+    plt.savefig(f"./main/results/LCF_plots/{params['samples']}_LCF(max_cov).pdf")
     return True
 
 # Modifying the function to add h_kl_avgs that tracks the h value corresponding to the minimum KL for each cov
@@ -264,7 +265,7 @@ def plot_cov_bw(
     }
 
     models = {"linear": "DummyModel", "boosting": GradientBoostingRegressor()}
-    samples = {'GMM' : random_GMM_samples, 'Thomas' : random_thomas_samples}
+    samples = {'GMM' : random_GMM_samples, 'Thomas' : random_thomas_samples, 'Matern' : random_matern_samples}
 
     h_scott_avgs = []
     h_kl_avgs = []

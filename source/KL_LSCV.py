@@ -49,7 +49,7 @@ def squared_error(h, conf, g_sample, p_sample, beta, flag, estim_type):
 
 
 def KL_find_bw(conf, g_sample, p_sample, beta=0, flag=True, estim_type="sklearn"):
-    h_list = np.linspace(0.01, 15, 100)
+    h_list = np.linspace(0.01, 5, 100)
     
     best_h = None
     min_error = float('inf')

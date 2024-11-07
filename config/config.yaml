@@ -1,22 +1,25 @@
 conf:
   max_mu : 100
-  n_samples : 1000
+  n_samples : 7000
   n_dim : 2 
-  n_GM_components : 2
+  n_GM_components : 30
   n_GP_components : 5
   kappa : 0.1
-  mu_offspring : 10
+  sigma : 2
+  lambda_parent: 2
+  lambda_daughter: 100
+    
 
 params:
-  max_cov_list : [0.1, 0.3, 0.5, 1, 1.5, 2, 2.5, 3, 3.5,]
-  n_tests : 10
+  max_cov_list : [3, 7, 12, 25, 45, 60, 90 , 130]
+  n_tests : 30
   f : "linear"
   model : "linear" 
-  samples : "Thomas"
+  samples : "Matern"
   n_splits : 1
 
 methods:
-  x_estim : ["ISE_estim"] 
+  x_estim : ["ISE_estim", 'ISE_uni', 'ISE_estim_clip', 'ISE_deg'] 
   x_no_estim : ["MCE_g"]
   y : ["MCE_p"]
 
@@ -27,7 +30,7 @@ hyp_dict:
   ISE_estim_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99999]
 
 hyp_params_dict:
-  bw_list : [1,]
+  bw_list : ['scott', 'KL']
   beta : 1
   estim_type : "scipy"
   clip_thrhold : 0.25
@@ -36,5 +39,6 @@ hyp_params_dict:
   KL_enable : True
   metrics_plots: False
   smooth_flag : True
+  errorbar_flag : False
 
   
