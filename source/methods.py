@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-from source.estimations import MCE, ISE, ISE_deg, ISE_clip, density_estimation
+from source.estimations import MCE, ISE, ISE_deg, ISE_clip, KMM_error
 
 log = logging.getLogger("__main__")
 
@@ -106,5 +106,9 @@ class IS_method:
             )
             log.debug(f"name = {self.name}, error = {error} ]")
             return error
-
+        
+        if self.name == "KMM":
+            error = KMM_error(test_gen_dict["err"], test_gen_dict["p_test"], test_gen_dict["g_test"], hyperparam)
+            log.debug(f"name = {self.name}, error = {error} ]")
+            return error
         return False

@@ -6,6 +6,9 @@ from .KL_LSCV import KL_find_bw
 from scipy.stats import gaussian_kde
 import scipy.stats as stats
 
+import math
+from cvxopt import matrix, solvers
+
 log = logging.getLogger("__main__")
 
 
@@ -132,3 +135,51 @@ def mape(x_err, y_err, confidence=0.95):
         mape_value - margin_of_error * 100,
         mape_value + margin_of_error * 100
     )
+
+def kernel_mean_matching(g_train, g_test, kern='lin', B=1.0, eps=None):
+    nx = g_train.shape[0]
+    nz = g_test.shape[0]
+    
+    if eps is None:
+        eps = max(1e-6, B / np.sqrt(nz))  # Avoid very small values for uniform distributions
+    
+    if kern == 'lin':
+        K = np.dot(g_test, g_test.T)
+        kappa = np.sum(np.dot(g_test, g_train.T) * float(nz) / float(nx), axis=1)
+    elif kern == 'rbf':
+        K = compute_rbf(g_test, g_test, sigma=adjust_sigma(g_test))
+        kappa = np.sum(compute_rbf(g_test, g_train, sigma=adjust_sigma(g_test)), axis=1) * float(nz) / float(nx)
+    else:
+        raise ValueError('Unknown kernel')
+    
+    K = matrix(K)
+    kappa = matrix(kappa)
+    
+    # Regularization with dynamic epsilon
+    G = matrix(np.vstack([np.ones((1, nz)), -np.ones((1, nz)), np.eye(nz), -np.eye(nz)]))
+    h = matrix(np.hstack([nz * (1 + eps), nz * (eps - 1), B * np.ones(nz), np.zeros(nz)]))
+    
+    sol = solvers.qp(K, -kappa, G, h)
+    coef = np.array(sol['x']).flatten()
+    
+    # Clip the coefficients to avoid extreme values
+    coef = np.clip(coef, 0, B)
+    
+    return coef
+
+def compute_rbf(X, Z, sigma=1.0):
+    """ Compute RBF kernel matrix """
+    K = np.zeros((X.shape[0], Z.shape[0]), dtype=float)
+    for i, vx in enumerate(X):
+        K[i, :] = np.exp(-np.sum((vx - Z) ** 2, axis=1) / (2.0 * sigma))
+    return K
+
+def adjust_sigma(data):
+    """ Dynamically adjust sigma based on the variance of the data """
+    pairwise_dists = np.sum((data[:, None] - data[None, :])**2, axis=-1)
+    median_dist = np.median(pairwise_dists)
+    return median_dist / np.log(len(data))  # Use median distance scaled by the log of the sample size
+
+def KMM_error(err, p_sample, g_sample, hyperparam):
+    coef = kernel_mean_matching(p_sample, g_sample, kern='rbf', B=hyperparam)
+    return logsumexp(err(g_sample) + np.log(coef)) - np.log(g_sample.shape[0])
