@@ -1,6 +1,9 @@
 import logging
 from copy import copy
+
+import numpy as np
 from omegaconf import OmegaConf
+
 from source.methods import IS_method
 
 log = logging.getLogger("__main__")
@@ -12,6 +15,8 @@ def read_configs(cfg):
     methods_names = OmegaConf.to_container(cfg["methods"])
     hyp_dict = OmegaConf.to_container(cfg["hyp_dict"])
     hyp_params_dict = OmegaConf.to_container(cfg["hyp_params_dict"])
+
+    # hyp_params_dict["bw_list"] = np.linspace(0.01, 10, 30)
 
     log.info(
         f"Starting configs:\n conf:\n{conf},\n params:\n{params},\n method_names:\n{methods_names},\n hyp_dict:\n{hyp_dict},\n hyp_params_dict:\n{hyp_params_dict}"

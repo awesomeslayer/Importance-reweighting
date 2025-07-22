@@ -1,6 +1,9 @@
-import numpy as np
 import logging
-from source.estimations import MCE, ISE, ISE_deg, ISE_clip
+
+import numpy as np
+
+from source.estimations import (ISE, MCE, Classifier_error, ISE_clip, ISE_deg,
+                                KMM_error)
 
 log = logging.getLogger("__main__")
 
@@ -15,9 +18,14 @@ class IS_method:
         self.best_metrics_dict = {
             "mape": [],
             "rmse": [],
+            "rmspe": [],
+            "corr": [],
             "mape_interval": [],
             "rmse_interval": [],
+            "rmspe_interval": [],
+            "corr_interval": [],
         }
+
         self.best_hyperparams_list = []
         self.best_bw_list = []
 
@@ -39,6 +47,16 @@ class IS_method:
                 np.empty(len(hyperparams_list), dtype=object)
                 for _ in range(len(bw_list))
             ],
+            "rmspe": [np.zeros(len(hyperparams_list)) for _ in range(len(bw_list))],
+            "rmspe_interval": [
+                np.empty(len(hyperparams_list), dtype=object)
+                for _ in range(len(bw_list))
+            ],
+            "corr": [np.zeros(len(hyperparams_list)) for _ in range(len(bw_list))],
+            "corr_interval": [
+                np.empty(len(hyperparams_list), dtype=object)
+                for _ in range(len(bw_list))
+            ],
         }
         log.debug(f"inited with name = {name}")
 
@@ -51,6 +69,17 @@ class IS_method:
 
         if self.name == "MCE_g":
             error = MCE(test_gen_dict["err"], test_gen_dict["g_test"])
+            log.debug(f"name = {self.name}, error = {error} ]")
+            return error
+
+        if self.name == "Classifier":
+            error = Classifier_error(
+                test_gen_dict["g_train"],
+                test_gen_dict["p_train"],
+                test_gen_dict["g_test"],
+                test_gen_dict["p_test"],
+                test_gen_dict["err"],
+            )
             log.debug(f"name = {self.name}, error = {error} ]")
             return error
 
@@ -107,4 +136,13 @@ class IS_method:
             log.debug(f"name = {self.name}, error = {error} ]")
             return error
 
+        if self.name == "KMM":
+            error = KMM_error(
+                test_gen_dict["err"],
+                test_gen_dict["p_test"],
+                test_gen_dict["g_test"],
+                hyperparam,
+            )
+            log.debug(f"name = {self.name}, error = {error} ]")
+            return error
         return False

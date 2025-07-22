@@ -1,9 +1,12 @@
+import os
 from copy import copy
 
 import GPy
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.linalg import cholesky, solve_triangular
+from scipy.spatial.distance import pdist, squareform
+from scipy.stats import poisson
 from sklearn.mixture import GaussianMixture
 
 np.seterr(divide="ignore")
@@ -152,6 +155,45 @@ def random_linear_func(config):
     return lambda X: ((X * x).sum(axis=1) + a)
 
 
+import numpy as np
+
+
+def random_quadratic_func(config):
+    """
+    Generates a random quadratic function in 2D.
+
+    :param config: Dictionary containing configuration parameters:
+                   - "n_dim": Number of dimensions (must be 2 for 2D).
+                   - "max_mu": Maximum value for the constant term.
+                   - "max_coef": Maximum value for quadratic coefficients.
+    :return: A function that takes a 2D input and returns a quadratic form.
+    """
+    if config["n_dim"] != 2:
+        raise ValueError("This function is designed for 2D inputs only.")
+
+    # Random coefficients for the quadratic terms (x^2, y^2, xy)
+    a = np.random.random() * config["max_coef"]  # x^2
+    b = np.random.random() * config["max_coef"]  # y^2
+    c = np.random.random() * config["max_coef"]  # xy
+
+    # Random coefficients for the linear terms (x, y)
+    d = np.random.random() * config["max_coef"]  # x
+    e = np.random.random() * config["max_coef"]  # y
+
+    # Random constant term
+    f = np.random.random() * config["max_mu"]  # Constant
+
+    # Return the quadratic function
+    return lambda X: (
+        a * X[0] ** 2  # x^2 term
+        + b * X[1] ** 2  # y^2 term
+        + c * X[0] * X[1]  # xy term
+        + d * X[0]  # x term
+        + e * X[1]  # y term
+        + f  # constant term
+    )
+
+
 def random_gaussian_mixture_func(config):
     """
     :param config:
@@ -162,12 +204,171 @@ def random_gaussian_mixture_func(config):
     return g
 
 
-def visualize_GMM_config(config, alpha):
-    GMM, _ = random_GMM_samples(config)
+def visualize_pattern(samples, config, name, alpha=0.7):
+    os.makedirs(f"./main/results/patterns/{name}", exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(12, 12))
-    ax.scatter(GMM[:, 0], GMM[:, 1], alpha=alpha)
-
+    ax.scatter(samples[:, 0], samples[:, 1], alpha=alpha)
+    ax.set_title(f"{name}")
     ax.set_xlim((0, config["max_mu"]))
     ax.set_ylim((0, config["max_mu"]))
-    plt.show()
+    plt.savefig(f"./main/results/patterns/{name}/{config['max_cov']}.pdf")
+
+
+def random_thomas_samples(config):
+    """
+    Generate Thomas cluster process samples
+
+    :param config: dictionary with parameters
+        n_samples: exact number of points to generate
+        max_mu: window size
+        n_dim: dimension of the space (typically 2)
+        kappa: parent intensity (default 5/(24*1000))
+        mu_offspring: mean offspring per cluster (default 120)
+        sigma: standard deviation of offspring displacement (default 7.5)
+    :return: samples array, log-density function
+    """
+    kappa = config.get("kappa", 5 / (24 * 1000))
+    mu_offspring = config.get("max_cov", 120)
+    sigma = config.get("sigma", 7.5)
+
+    points = []
+    while len(points) < config["n_samples"]:
+        # Generate parent points - increase number of parents if needed
+        n_parents = max(1, poisson.rvs(kappa * config["max_mu"] ** 2))
+        parent_points = np.random.uniform(
+            0, config["max_mu"], (n_parents, config["n_dim"])
+        )
+
+        for parent in parent_points:
+            if len(points) >= config["n_samples"]:
+                break
+
+            # Generate number of offspring for this parent
+            n_offspring = poisson.rvs(mu_offspring)
+
+            if n_offspring > 0:
+                # Generate offspring positions with border handling
+                displacement = np.random.normal(
+                    0, sigma, (n_offspring, config["n_dim"])
+                )
+                offspring = parent + displacement
+
+                # Handle boundary conditions by reflection
+                for i in range(config["n_dim"]):
+                    # Reflect points that are outside the boundary
+                    offspring[:, i] = np.where(
+                        offspring[:, i] < 0, -offspring[:, i], offspring[:, i]
+                    )
+                    offspring[:, i] = np.where(
+                        offspring[:, i] > config["max_mu"],
+                        2 * config["max_mu"] - offspring[:, i],
+                        offspring[:, i],
+                    )
+
+                points.extend(offspring)
+
+    # Convert to numpy array and trim to exact number of points
+    points = np.array(points)[: config["n_samples"]]
+
+    # Approximate log-density function for Thomas process
+    def log_density(X):
+        if len(X.shape) == 1:
+            X = X.reshape(1, -1)
+
+        density = np.zeros(len(X))
+        for parent in parent_points:
+            # Calculate Gaussian density contribution from each parent
+            diff = X - parent
+            dist_sq = np.sum(diff**2, axis=1)
+            density += np.exp(-dist_sq / (2 * sigma**2)) / (2 * np.pi * sigma**2)
+
+        return np.log(kappa * mu_offspring * density)
+
+    return points, log_density
+
+
+def random_matern_samples(config):
+    """
+    Generate Matern cluster process samples with log-density function in any dimension.
+
+    :param config: dictionary with parameters
+        n_samples: number of points to generate
+        max_mu: maximum value for the simulation window
+        lambda_parent: density of parent Poisson point process
+        lambda_daughter: mean number of points in each cluster
+        radius_cluster: radius of cluster disks for daughter points
+        n_dim: dimensionality of the data
+    :return: samples array (coordinates of points in n-dimensions), log-density function
+    """
+
+    # Simulation window parameters (generalized for any dimension)
+    x_min = 0
+    x_max = config["max_mu"]
+    n_dim = config["n_dim"]
+
+    # Parameters for the parent and daughter point processes
+    lambda_parent = config["lambda_parent"]
+    lambda_daughter = config["lambda_daughter"]
+    radius_cluster = config["max_cov"]
+
+    # Extended simulation windows parameters
+    r_ext = radius_cluster
+    window_size_ext = x_max + r_ext
+
+    # Container for final points
+    points = []
+
+    while len(points) < config["n_samples"]:
+        # Simulate Poisson point process for the parents
+        numb_points_parent = np.random.poisson(window_size_ext**n_dim * lambda_parent)
+
+        # Generate parent points uniformly within the extended simulation window
+        parent_points = np.random.uniform(
+            0, window_size_ext, (numb_points_parent, n_dim)
+        )
+
+        # Simulate Poisson point process for the daughters (final point process)
+        numb_points_daughter = np.random.poisson(lambda_daughter, numb_points_parent)
+        numb_points = np.sum(numb_points_daughter)  # total number of daughter points
+
+        # Generate the (relative) locations in polar coordinates for each dimension
+        rho = radius_cluster * np.sqrt(
+            np.random.uniform(0, 1, numb_points)
+        )  # radial coordinates
+
+        # Generate random directions for all dimensions (unit vectors in n-dim space)
+        directions = np.random.normal(0, 1, (numb_points, n_dim))
+        directions /= np.linalg.norm(directions, axis=1)[:, np.newaxis]
+
+        # Create the daughter points by displacing the parent points
+        displacement = rho[:, np.newaxis] * directions
+        daughters = (
+            np.repeat(parent_points, numb_points_daughter, axis=0) + displacement
+        )
+
+        # Ensure daughters stay within bounds [0, max_mu] in all dimensions
+        daughters = np.clip(daughters, 0, x_max)
+
+        points.extend(daughters)
+
+    # Convert to numpy array and trim to the exact number of points
+    points = np.array(points)[: config["n_samples"]]
+
+    # Approximate log-density function for the Matern process
+    def log_density(X):
+        if len(X.shape) == 1:
+            X = X.reshape(1, -1)
+
+        density = np.zeros(len(X))
+        for parent in parent_points:
+            # Calculate Gaussian density contribution from each parent
+            diff = X - parent
+            dist_sq = np.sum(diff**2, axis=1)
+            density += np.exp(-dist_sq / (2 * radius_cluster**2)) / (
+                (2 * np.pi) ** (n_dim / 2) * radius_cluster**n_dim
+            )
+
+        return np.log(lambda_parent * lambda_daughter * density)
+
+    return points, log_density

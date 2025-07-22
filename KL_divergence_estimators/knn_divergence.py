@@ -1,17 +1,17 @@
-""" KL-Divergence estimation through K-Nearest Neighbours
+"""KL-Divergence estimation through K-Nearest Neighbours
 
-    This module provides four implementations of the K-NN divergence estimator of
-        Qing Wang, Sanjeev R. Kulkarni, and Sergio Verdú.
-        "Divergence estimation for multidimensional densities via
-        k-nearest-neighbor distances." Information Theory, IEEE Transactions on
-        55.5 (2009): 2392-2405.
+This module provides four implementations of the K-NN divergence estimator of
+    Qing Wang, Sanjeev R. Kulkarni, and Sergio Verdú.
+    "Divergence estimation for multidimensional densities via
+    k-nearest-neighbor distances." Information Theory, IEEE Transactions on
+    55.5 (2009): 2392-2405.
 
-    The implementations are through:
-        numpy (naive_estimator)
-        scipy (scipy_estimator)
-        scikit-learn (skl_estimator / skl_efficient)
+The implementations are through:
+    numpy (naive_estimator)
+    scipy (scipy_estimator)
+    scikit-learn (skl_estimator / skl_efficient)
 
-    No guarantees are made w.r.t the efficiency of these implementations.
+No guarantees are made w.r.t the efficiency of these implementations.
 
 """
 
