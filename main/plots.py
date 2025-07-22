@@ -12,7 +12,7 @@ from sklearn.model_selection import KFold, ShuffleSplit
 from sklearn.neighbors import KernelDensity
 from tqdm import tqdm, trange
 
-from KL_divergence_estimators.knn_divergence import (naive_estimator,
+from .source.KL_divergence_estimators.knn_divergence import (naive_estimator,
                                                      scipy_estimator,
                                                      skl_efficient,
                                                      skl_estimator)
