@@ -27,8 +27,8 @@ The overall experimental workflow is divided into two parts: data preparation an
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/awesomeslayer/Spatial_Errors.git
-    cd Spatial_Errors
+    git clone https://github.com/awesomeslayer/Importance-reweighting-methods-for-high-quality-validation.git
+    cd Importance-reweighting-methods-for-high-quality-validation
     ```
 
 2.  **Set up the Python version:**
