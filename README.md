@@ -1,4 +1,3 @@
-
 # Importance Reweighting for High-Quality Validation of Data-Based Models
 
 This project provides a systematic evaluation of reweighting methods for the accurate risk estimation (error assessment) of machine learning models under spatial distribution shift. This is critically important when training (source) and target data exhibit different spatial characteristics, a common scenario in ecological, biomedical, and other geospatial domains.
@@ -27,8 +26,8 @@ The overall experimental workflow is divided into two parts: data preparation an
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/awesomeslayer/Importance-reweighting-methods-for-high-quality-validation.git
-    cd Importance-reweighting-methods-for-high-quality-validation
+    git clone https://github.com/awesomeslayer/Importance-reweighting.git
+    cd Importance-reweighting
     ```
 
 2.  **Set up the Python version:**
@@ -57,3 +56,5 @@ To run the main experiment as described in the paper (executing `main/main.py`),
 ```bash
 nox -s poetry_run
 ```
+
+The processing of the datasets is detailed in the `./notebooks/datasets.ipynb` notebook.
