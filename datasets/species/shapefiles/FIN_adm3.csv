@@ -1,0 +1,81 @@
+"OBJECTID","ID_0","ISO","NAME_0","ID_1","NAME_1","ID_2","NAME_2","ID_3","NAME_3","TYPE_3","ENGTYPE_3","NL_NAME_3","VARNAME_3"
+1,78,"FIN","Finland",1,"Eastern Finland",1,"North Karelia",1,"Ilomantsi","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+2,78,"FIN","Finland",1,"Eastern Finland",1,"North Karelia",2,"Joensuu","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+3,78,"FIN","Finland",1,"Eastern Finland",1,"North Karelia",3,"Middle Karelia","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+4,78,"FIN","Finland",1,"Eastern Finland",1,"North Karelia",4,"Pielisen Karelia","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+5,78,"FIN","Finland",1,"Eastern Finland",2,"North Savonia",5,"Kuopio","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+6,78,"FIN","Finland",1,"Eastern Finland",2,"North Savonia",6,"North Eastern Savonia","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+7,78,"FIN","Finland",1,"Eastern Finland",2,"North Savonia",7,"Upper Savonia","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+8,78,"FIN","Finland",1,"Eastern Finland",2,"North Savonia",8,"Varkaus","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+9,78,"FIN","Finland",1,"Eastern Finland",3,"Päijänne Tavastia",9,"Heinola","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+10,78,"FIN","Finland",1,"Eastern Finland",4,"Southern Savonia",10,"Juva","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+11,78,"FIN","Finland",1,"Eastern Finland",4,"Southern Savonia",11,"Mikkeli","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+12,78,"FIN","Finland",1,"Eastern Finland",4,"Southern Savonia",12,"Pieksämäki","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+13,78,"FIN","Finland",1,"Eastern Finland",4,"Southern Savonia",13,"Savonlinna","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+14,78,"FIN","Finland",1,"Eastern Finland",4,"Southern Savonia",14,"Varkaus","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+15,78,"FIN","Finland",2,"Lapland",5,"Lapland",15,"Eastern Lapland","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+16,78,"FIN","Finland",2,"Lapland",5,"Lapland",16,"Kemi-Tornio","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+17,78,"FIN","Finland",2,"Lapland",5,"Lapland",17,"Northern Lapland","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+18,78,"FIN","Finland",2,"Lapland",5,"Lapland",18,"Rovaniemi","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+19,78,"FIN","Finland",2,"Lapland",5,"Lapland",19,"Tornio Valley","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+20,78,"FIN","Finland",2,"Lapland",5,"Lapland",20,"Tunturi Lapland","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+21,78,"FIN","Finland",3,"Oulu",6,"Kainuu",21,"Kajaani","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+22,78,"FIN","Finland",3,"Oulu",6,"Kainuu",22,"Kehys-Kainuu","Seutukunta|Ekonomisk region","Sub-Region",NA,"Ylä-Kainuun"
+23,78,"FIN","Finland",3,"Oulu",7,"Northern Ostrobothnia",23,"Koillismaa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+24,78,"FIN","Finland",3,"Oulu",7,"Northern Ostrobothnia",24,"Nivala-Haapajärvi","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+25,78,"FIN","Finland",3,"Oulu",7,"Northern Ostrobothnia",25,"Oulunkaari","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+26,78,"FIN","Finland",3,"Oulu",7,"Northern Ostrobothnia",26,"Oulu","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+27,78,"FIN","Finland",3,"Oulu",7,"Northern Ostrobothnia",27,"Raahe","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+28,78,"FIN","Finland",3,"Oulu",7,"Northern Ostrobothnia",28,"Siikalatva","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+29,78,"FIN","Finland",3,"Oulu",7,"Northern Ostrobothnia",29,"Ylivieska","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+30,78,"FIN","Finland",4,"Southern Finland",8,"Eastern Uusimaa",30,"Loviisa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+31,78,"FIN","Finland",4,"Southern Finland",8,"Eastern Uusimaa",31,"Porvoo","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+32,78,"FIN","Finland",4,"Southern Finland",9,"Kymenlaakso",32,"Kotka-Hamina","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+33,78,"FIN","Finland",4,"Southern Finland",9,"Kymenlaakso",33,"Kouvola","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+34,78,"FIN","Finland",4,"Southern Finland",10,"Päijänne Tavastia",34,"Lahti","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+35,78,"FIN","Finland",4,"Southern Finland",11,"South Karelia",35,"Imatra","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+36,78,"FIN","Finland",4,"Southern Finland",11,"South Karelia",36,"Lappeenranta","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+37,78,"FIN","Finland",4,"Southern Finland",11,"South Karelia",37,"Western Saimaa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+38,78,"FIN","Finland",4,"Southern Finland",12,"Uusimaa",38,"Ekenäs","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+39,78,"FIN","Finland",4,"Southern Finland",12,"Uusimaa",39,"Helsinki","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+40,78,"FIN","Finland",4,"Southern Finland",12,"Uusimaa",40,"Lohja","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+41,78,"FIN","Finland",5,"Western Finland",13,"Central Finland",41,"Äänekoski","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+42,78,"FIN","Finland",5,"Western Finland",13,"Central Finland",42,"Jämsä","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+43,78,"FIN","Finland",5,"Western Finland",13,"Central Finland",43,"Jyväskylä","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+44,78,"FIN","Finland",5,"Western Finland",13,"Central Finland",44,"Keuruu","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+45,78,"FIN","Finland",5,"Western Finland",13,"Central Finland",45,"Saarijärvi","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+46,78,"FIN","Finland",5,"Western Finland",13,"Central Finland",46,"South Eastern Middle","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+47,78,"FIN","Finland",5,"Western Finland",13,"Central Finland",47,"Viitasaari","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+48,78,"FIN","Finland",5,"Western Finland",14,"Central Ostrobothnia",48,"Kaustinen","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+49,78,"FIN","Finland",5,"Western Finland",14,"Central Ostrobothnia",49,"Kokkola","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+50,78,"FIN","Finland",5,"Western Finland",15,"Finland Proper",50,"Åboland-Turunmaa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+51,78,"FIN","Finland",5,"Western Finland",15,"Finland Proper",51,"Loimaa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+52,78,"FIN","Finland",5,"Western Finland",15,"Finland Proper",52,"Salo","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+53,78,"FIN","Finland",5,"Western Finland",15,"Finland Proper",53,"Turku","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+54,78,"FIN","Finland",5,"Western Finland",15,"Finland Proper",54,"Vakka-Suomi","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+55,78,"FIN","Finland",5,"Western Finland",16,"Ostrobothnia",55,"Jakobstadsregionen","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+56,78,"FIN","Finland",5,"Western Finland",16,"Ostrobothnia",56,"Kyrönmaa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+57,78,"FIN","Finland",5,"Western Finland",16,"Ostrobothnia",57,"South Eastern Bothnia","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+58,78,"FIN","Finland",5,"Western Finland",16,"Ostrobothnia",58,"Vaasa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+59,78,"FIN","Finland",5,"Western Finland",17,"Päijänne Tavastia",59,"Lahti","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+60,78,"FIN","Finland",5,"Western Finland",18,"Pirkanmaa",60,"Jämsä","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+61,78,"FIN","Finland",5,"Western Finland",18,"Pirkanmaa",61,"North Western Pirkanm","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+62,78,"FIN","Finland",5,"Western Finland",18,"Pirkanmaa",62,"South Eastern Pirkanm","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+63,78,"FIN","Finland",5,"Western Finland",18,"Pirkanmaa",63,"South Western Pirkanm","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+64,78,"FIN","Finland",5,"Western Finland",18,"Pirkanmaa",64,"Southern Pirkanmaa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+65,78,"FIN","Finland",5,"Western Finland",18,"Pirkanmaa",65,"Tampere","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+66,78,"FIN","Finland",5,"Western Finland",18,"Pirkanmaa",66,"Upper Pirkanmaa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+67,78,"FIN","Finland",5,"Western Finland",19,"Satakunta",67,"Northern Satakunta","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+68,78,"FIN","Finland",5,"Western Finland",19,"Satakunta",68,"Pori","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+69,78,"FIN","Finland",5,"Western Finland",19,"Satakunta",69,"Rauma","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+70,78,"FIN","Finland",5,"Western Finland",19,"Satakunta",70,"South Eastern Satakun","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+71,78,"FIN","Finland",5,"Western Finland",20,"Southern Ostrobothnia",71,"Härmänmaa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+72,78,"FIN","Finland",5,"Western Finland",20,"Southern Ostrobothnia",72,"Järviseutu","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+73,78,"FIN","Finland",5,"Western Finland",20,"Southern Ostrobothnia",73,"Kuusiokunnat","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+74,78,"FIN","Finland",5,"Western Finland",20,"Southern Ostrobothnia",74,"Northern Seinänaapuri","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+75,78,"FIN","Finland",5,"Western Finland",20,"Southern Ostrobothnia",75,"South Eastern Bothnia","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+76,78,"FIN","Finland",5,"Western Finland",20,"Southern Ostrobothnia",76,"Southern Seinänaapuri","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+77,78,"FIN","Finland",5,"Western Finland",21,"Tavastia Proper",77,"Forssa","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+78,78,"FIN","Finland",5,"Western Finland",21,"Tavastia Proper",78,"Hämeenlinna","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+79,78,"FIN","Finland",5,"Western Finland",21,"Tavastia Proper",79,"Lahti","Seutukunta|Ekonomisk region","Sub-Region",NA,NA
+80,78,"FIN","Finland",5,"Western Finland",21,"Tavastia Proper",80,"Riihimäki","Seutukunta|Ekonomisk region","Sub-Region",NA,NA

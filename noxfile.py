@@ -2,7 +2,7 @@ import nox
 
 locations = "source", "tests", "plots", "noxfile.py"
 
-PYTHON_VERSIONS = ["3.11.9"]
+PYTHON_VERSIONS = ["3.11.10"]
 
 
 @nox.session(python=PYTHON_VERSIONS)
@@ -33,6 +33,4 @@ def pylint(session):
 @nox.session(python=PYTHON_VERSIONS)
 def poetry_run(session):
     session.run("poetry", "install", external=True)
-    session.run(
-        "poetry", "run", "python3.11", "-m", "plots.max_cov_plot", external=True
-    )
+    session.run("poetry", "run", "python3.11", "-m", "main.main", external=True)

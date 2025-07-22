@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "Spatial_Errors"
-version = "0.2.0"
-description = "task for LARSS"
+version = "2.2.8"
+description = ""
 authors = ["mosthated"]
 homepage = "https://github.com/awesomeslayer/Spatial_Errors"
 repository = "https://github.com/awesomeslayer/Spatial_Errors"
@@ -10,7 +10,7 @@ keywords = ["Risk estimation", "Importance Sampling"]
 
 
 [tool.poetry.dependencies]
-python = "3.11.9"
+python = "3.11.10"
 tqdm = "^4.66.4"
 statsmodels = "^0.14.2"
 scikit-learn = "^1.5.1"
@@ -18,6 +18,17 @@ omegaconf = "^2.3.0"
 matplotlib = "^3.9.1"
 gpy = "^1.13.2"
 hydra-core = "^1.3.2"
+numpy = "^1.26.4"
+pandas = "^2.2.2"
+scipy = "^1.3.0"
+numba = "^0.60.0"
+torch = "^2.3.1"
+colorama = "^0.4.6"
+imbalanced-learn = "^0.12.3"
+xgboost = "^2.1.0"
+geopandas = "^0.14.4"
+seaborn = "^0.13.2"
+cvxopt = "^1.3.2"
 
 
 [build-system]
