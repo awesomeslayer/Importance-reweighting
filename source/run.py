@@ -10,8 +10,15 @@ from .simulation import (
     random_GP_func,
     random_linear_func,
     random_uniform_samples,
+    random_thomas_samples,
+    random_matern_samples,
+    visualize_pattern
 )
+<<<<<<< HEAD
 from .plots import plot_extr_bw, plot_extr_hyp
+=======
+from main.plots import plot_extr_bw, plot_extr_hyp
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
 from .estimations import density_estimation, mape, rmse
 =======
 import numpy as np
@@ -48,6 +55,7 @@ def run(
 
     models = {"linear": DummyModel(), "boosting": GradientBoostingRegressor()}
 
+<<<<<<< HEAD
     samples = {
         "GMM": random_GMM_samples,
         "Thomas": random_thomas_samples,
@@ -66,6 +74,14 @@ def run(
 
         conf_p["max_cov"] = 400
         params["p_gen"] = partial(samples["GMM"], conf_p)
+=======
+    samples = {'GMM' : random_GMM_samples, 'Thomas' : random_thomas_samples, 'Matern' : random_matern_samples}
+
+    params["f_gen"] = f_gens[params["f"]]
+    params["model_gen"] = models[params["model"]]
+    params["g_gen"] = partial(samples[params['samples']], conf)
+    params["p_gen"] = partial(random_uniform_samples, conf, True)
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
 
     kf = (
         KFold(n_splits=params["n_splits"])
@@ -82,6 +98,10 @@ def run(
         for n_bw, _ in enumerate(method.bw_list):
             for n_hyp, _ in enumerate(method.hyperparams_list):
                 method.test_errors_list[n_bw][n_hyp] = np.zeros(params["n_tests"])
+    
+    bw_estim_dict = {}
+    for bw in hyp_params_dict['bw_list']:
+        bw_estim_dict[bw] = 0
 
     bw_estim_dict = {}
     for bw in hyp_params_dict["bw_list"]:
@@ -99,12 +119,22 @@ def run(
         p_sample, test_gen_dict["p"] = params["p_gen"]()
         test_gen_dict["model"] = params["model_gen"]
 
+<<<<<<< HEAD
         if n_test == 0:
             in_bounds = np.all((g_sample >= 0) & (g_sample <= conf["max_mu"]), axis=1)
             log.debug(f"Number of g_sample in bounds: {np.sum(in_bounds)}")
             visualize_pattern(g_sample, conf, params["samples"], alpha=0.7)
             visualize_pattern(p_sample, conf, "uniform", alpha=0.7)
 
+=======
+        if(n_test == 0):
+            in_bounds = np.all((g_sample >= 0) & (g_sample <= conf['max_mu']), axis=1)
+            log.debug(f"Number of g_sample in bounds: {np.sum(in_bounds)}")
+            visualize_pattern(g_sample, conf, params['samples'], alpha = 0.7)
+            visualize_pattern(p_sample, conf, 'uniform', alpha = 0.7)
+    
+        
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
         for n_fold, (train_idx, test_idx) in enumerate(kf.split(g_sample)):
 
             test_gen_dict["g_train"] = g_sample[train_idx]
@@ -113,10 +143,13 @@ def run(
             test_gen_dict["p_test"] = p_sample[test_idx]
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
             test_gen_dict_p["g_train"] = p_sample[train_idx]
             test_gen_dict_p["g_test"] = p_sample[test_idx]
 
+=======
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
             log.debug(f"test_gen_dict: {test_gen_dict}")
 
 >>>>>>> test2
@@ -129,6 +162,7 @@ def run(
             )
 
             for bw in hyp_params_dict["bw_list"]:
+<<<<<<< HEAD
 <<<<<<< HEAD
                 g_estim_dict[bw] = density_estimation(
                     conf, hyp_params_dict, test_gen_dict, bw
@@ -148,6 +182,13 @@ def run(
 
                 bw_estim_dict[bw] += bw_temp / (params["n_tests"] * params["n_splits"])
 
+=======
+                g_estim_dict[bw], bw_temp = density_estimation(
+                    conf, hyp_params_dict, test_gen_dict, bw
+                )
+                bw_estim_dict[bw] += bw_temp/(params["n_tests"] * params['n_splits'])
+            
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
             log.debug(f"n_test: {n_test},\n test/train idx:{train_idx},\n {test_idx}\n")
 >>>>>>> test2
             log.debug(f"g_estim_dict:\n {g_estim_dict}\n")
@@ -168,6 +209,7 @@ def run(
                             / params["n_splits"]
                         )
 <<<<<<< HEAD
+<<<<<<< HEAD
 
     proceed_metrics(conf, params, methods_list)
 
@@ -186,6 +228,15 @@ def proceed_metrics(conf, params, methods_list):
 
 def proceed_metrics(conf, params, methods_list, hyp_params_dict, bw_estim_dict):
 >>>>>>> test2
+=======
+                log.debug(f"got test_errors_list: {method.test_errors_list}")
+    
+    proceed_metrics(conf, params, methods_list, hyp_params_dict, bw_estim_dict)
+   
+    return True
+
+def proceed_metrics(conf, params, methods_list, hyp_params_dict, bw_estim_dict):
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
     y_method = [method for method in methods_list if method.name == "MCE_p"][0]
     x_methods_list = [method for method in methods_list if method.name != "MCE_p"]
 
@@ -229,17 +280,25 @@ def proceed_metrics(conf, params, methods_list, hyp_params_dict, bw_estim_dict):
                     x_method.test_metrics_dict["mape"][n_bw][n_hyp],
                     x_method.test_metrics_dict["mape_interval"][n_bw][n_hyp],
                 ) = mape(
+<<<<<<< HEAD
                     np.exp(x_method.test_errors_list[n_bw][n_hyp]),
                     y_err,
                     hyp_params_dict["confidence"],
+=======
+                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err, hyp_params_dict['confidence']
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
                 )
                 (
                     x_method.test_metrics_dict["rmse"][n_bw][n_hyp],
                     x_method.test_metrics_dict["rmse_interval"][n_bw][n_hyp],
                 ) = rmse(
+<<<<<<< HEAD
                     np.exp(x_method.test_errors_list[n_bw][n_hyp]),
                     y_err,
                     hyp_params_dict["confidence"],
+=======
+                    np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err, hyp_params_dict['confidence']
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
                 )
                 (
                     x_method.test_metrics_dict["rmspe"][n_bw][n_hyp],
@@ -253,7 +312,10 @@ def proceed_metrics(conf, params, methods_list, hyp_params_dict, bw_estim_dict):
                 ) = corr(np.exp(x_method.test_errors_list[n_bw][n_hyp]), y_err, 0.95)
             log.debug(
                 f"x_method:{x_method.name}, bw:{bw}\n test_metrics_dict[mape][bw]:\n{x_method.test_metrics_dict['mape'][n_bw]}\n"
+<<<<<<< HEAD
 >>>>>>> test2
+=======
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
             )
 
             best_index = np.argmin(x_method.test_metrics_dict["mape"][n_bw])
@@ -332,10 +394,15 @@ def proceed_metrics(conf, params, methods_list, hyp_params_dict, bw_estim_dict):
         ]
         x_method.best_bw_list += [x_method.bw_list[best_index]]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+        
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
         log.debug(
-            f"adding best-best metrics and hyps for x_method: {x_method.name}:best metrics_dict:\n{x_method.best_metrics_dict}\n"
+            f"adding best-best metrics and hyps for x_method: {x_method.name}:\nbest metrics_dict:\n{x_method.best_metrics_dict}\n"
         )
         log.debug(
+<<<<<<< HEAD
             f"best_hyperparams_list:{x_method.best_hyperparams_list},\n best_bw_list:{x_method.best_bw_list}"
 =======
 
@@ -345,6 +412,9 @@ def proceed_metrics(conf, params, methods_list, hyp_params_dict, bw_estim_dict):
         log.debug(
             f"best_hyperparams_list:\n{x_method.best_hyperparams_list},\n best_bw_list:{x_method.best_bw_list}"
 >>>>>>> test2
+=======
+            f"best_hyperparams_list:\n{x_method.best_hyperparams_list},\n best_bw_list:{x_method.best_bw_list}"
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
         )
 
         plot_extr_bw(conf, params, best_metrics_hyp["mape"], x_method)

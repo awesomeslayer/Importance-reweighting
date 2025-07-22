@@ -12,6 +12,11 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KernelDensity
 
 from .KL_LSCV import KL_find_bw
+from scipy.stats import gaussian_kde
+import scipy.stats as stats
+
+import math
+from cvxopt import matrix, solvers
 
 log = logging.getLogger("__main__")
 
@@ -43,10 +48,9 @@ def density_estimation(conf, hyp_params_dict, test_gen_dict, bw):
         )
         g_estim = lambda X: np.log(kde.evaluate(X.T))
         bw_temp = kde.covariance_factor()
-
+    
     log.debug(f"bw = {bw}, bw_temp = {bw_temp}")
     return g_estim, bw_temp
-
 
 
 def ISE(err, p, g, g_sample):
@@ -407,197 +411,66 @@ def corr(x_err, y_err, confidence=0.95, method="spearman"):
 
 def mape(x_err, y_err, confidence=0.95):
     errors = [abs(x - y) / y for x, y in zip(x_err, y_err) if y != 0]
-
-    if not errors:
-        return 1337, (1337, 1337)
-
-    mape_value = np.mean(errors) * 100
+    
+    mape_value = min(np.mean(errors) * 100, 200)
+    if np.isnan(mape_value):
+        mape_value = 200
 
     n = len(errors)
     std_dev = np.sqrt(np.var(errors, ddof=1))
     alpha = 1 - confidence
     t_critical = stats.t.ppf(1 - alpha / 2, n - 1)
-    margin_of_error = t_critical * (std_dev / np.sqrt(n)) * 100
+    margin_of_error = t_critical * (std_dev / np.sqrt(n))
 
-    return mape_value, (mape_value - margin_of_error, mape_value + margin_of_error)
+    return mape_value, (
+        mape_value - margin_of_error * 100,
+        mape_value + margin_of_error * 100
+    )
 
-
-def compute_rbf(X, Y, sigma=1.0):
-    """
-    Compute RBF kernel matrix K(x,y) = exp(-||x-y||^2 / (2 * sigma^2))
-
-    Args:
-        X (np.ndarray): First set of points, shape (n_samples_X, n_features)
-        Y (np.ndarray): Second set of points, shape (n_samples_Y, n_features)
-        sigma (float): Kernel bandwidth parameter
-
-    Returns:
-        np.ndarray: Kernel matrix with shape (n_samples_X, n_samples_Y)
-    """
-    X_norm = np.sum(X**2, axis=1).reshape(-1, 1)
-    Y_norm = np.sum(Y**2, axis=1).reshape(1, -1)
-    dist_squared = X_norm + Y_norm - 2 * np.dot(X, Y.T)
-    return np.exp(-dist_squared / (2 * sigma**2))
-
-
-def adjust_sigma(X, factor=0.5):
-    """
-    Heuristic to adjust sigma based on data
-
-    Args:
-        X (np.ndarray): Data points, shape (n_samples, n_features)
-        factor (float): Scaling factor
-
-    Returns:
-        float: Adjusted sigma value
-    """
-    # Median heuristic for bandwidth
-    n_samples = X.shape[0]
-    if n_samples > 1000:
-        # Subsample for efficiency
-        indices = np.random.choice(n_samples, 1000, replace=False)
-        X_sample = X[indices]
-    else:
-        X_sample = X
-
-    X_norm = np.sum(X_sample**2, axis=1).reshape(-1, 1)
-    dist_squared = X_norm + X_norm.T - 2 * np.dot(X_sample, X_sample.T)
-    dist_squared = np.maximum(
-        dist_squared, 0.0
-    )  # Ensure non-negative due to numerical issues
-
-    # Compute median of non-zero distances
-    sigma = np.sqrt(np.median(dist_squared[dist_squared > 0]))
-    if sigma < 1e-10:
-        sigma = 1.0  # Fallback if median is too small
-
-    return sigma * factor
-
-
-def generate_rff_mapping(X: np.ndarray, num_features: int, sigma: float) -> np.ndarray:
-    """
-    Generate Random Fourier Features mapping for RBF kernel approximation
-
-    Args:
-        X (np.ndarray): Input data with shape (n_samples, n_features)
-        num_features (int): Number of random features to generate
-        sigma (float): Kernel bandwidth parameter
-
-    Returns:
-        np.ndarray: Transformed features with shape (n_samples, 2*num_features)
-    """
-    d = X.shape[1]
-
-    # Random weights with appropriate scaling for RBF kernel
-    # Note: 1/sigma is used because in RBF exp(-||x-y||^2/(2*sigma^2))
-    # corresponds to a Gaussian spectral density with variance 1/sigma^2
-    W = np.random.randn(d, num_features) / sigma
-
-    # Random bias terms
-    b = np.random.uniform(0, 2 * np.pi, size=num_features)
-
-    # Compute features
-    Z = np.cos(X @ W + b)
-
-    # Scale appropriately
-    Z = Z * np.sqrt(2.0 / num_features)
-
-    return Z
-
-
-def kernel_mean_matching(
-    g_train: np.ndarray,
-    g_test: np.ndarray,
-    kern: str = "lin",
-    B: float = 1.0,
-    eps: Optional[float] = None,
-    rff_dim: int = 500,
-) -> np.ndarray:
-    """
-    Kernel Mean Matching implementation with multiple kernel options
-
-    Args:
-        g_train (np.ndarray): Training data, shape (nx, n_features)
-        g_test (np.ndarray): Test data, shape (nz, n_features)
-        kern (str): Kernel type: 'lin' (linear), 'rbf' (RBF kernel), or 'rff' (Random Fourier Features)
-        B (float): Upper bound on the importance weights
-        eps (Optional[float]): Regularization parameter
-        rff_dim (int): Dimension for random Fourier features (only used when kern='rff')
-
-    Returns:
-        np.ndarray: Importance weights for test samples
-    """
+def kernel_mean_matching(g_train, g_test, kern='lin', B=1.0, eps=None):
     nx = g_train.shape[0]
     nz = g_test.shape[0]
-
+    
     if eps is None:
-        eps = max(
-            1e-6, B / np.sqrt(nz)
-        )  # Avoid very small values for uniform distributions
-
-    # Suppress CVXOPT output
-    solvers.options["show_progress"] = False
-
-    if kern == "lin":
-        # Linear kernel
+        eps = max(1e-6, B / np.sqrt(nz))  # Avoid very small values for uniform distributions
+    
+    if kern == 'lin':
         K = np.dot(g_test, g_test.T)
         kappa = np.sum(np.dot(g_test, g_train.T) * float(nz) / float(nx), axis=1)
-
-    elif kern == "rbf":
-        # RBF kernel
-        sigma = adjust_sigma(g_test)
-        K = compute_rbf(g_test, g_test, sigma=sigma)
-        kappa = (
-            np.sum(compute_rbf(g_test, g_train, sigma=sigma), axis=1)
-            * float(nz)
-            / float(nx)
-        )
-
-    elif kern == "rff":
-        # Random Fourier Features approximation of RBF kernel
-        sigma = adjust_sigma(g_test)
-
-        # Combine both datasets for consistent feature mapping
-        X_combined = np.vstack([g_train, g_test])
-
-        # Generate random Fourier features
-        Z_combined = generate_rff_mapping(X_combined, rff_dim, sigma)
-
-        # Split back into train and test
-        Z_train = Z_combined[:nx]
-        Z_test = Z_combined[nx:]
-
-        # Compute kernel matrix and mean embedding using the RFF transformation
-        K = np.dot(
-            Z_test, Z_test.T
-        )  # approximation of RBF kernel using inner product of features
-        kappa = np.sum(np.dot(Z_test, Z_train.T) * float(nz) / float(nx), axis=1)
-
+    elif kern == 'rbf':
+        K = compute_rbf(g_test, g_test, sigma=adjust_sigma(g_test))
+        kappa = np.sum(compute_rbf(g_test, g_train, sigma=adjust_sigma(g_test)), axis=1) * float(nz) / float(nx)
     else:
-        raise ValueError('Unknown kernel. Available options are "lin", "rbf", or "rff"')
-
-    # Convert to CVXOPT format
+        raise ValueError('Unknown kernel')
+    
     K = matrix(K)
     kappa = matrix(kappa)
-
+    
     # Regularization with dynamic epsilon
-    G = matrix(
-        np.vstack([np.ones((1, nz)), -np.ones((1, nz)), np.eye(nz), -np.eye(nz)])
-    )
-    h = matrix(
-        np.hstack([nz * (1 + eps), nz * (eps - 1), B * np.ones(nz), np.zeros(nz)])
-    )
-
-    # Solve quadratic program
+    G = matrix(np.vstack([np.ones((1, nz)), -np.ones((1, nz)), np.eye(nz), -np.eye(nz)]))
+    h = matrix(np.hstack([nz * (1 + eps), nz * (eps - 1), B * np.ones(nz), np.zeros(nz)]))
+    
     sol = solvers.qp(K, -kappa, G, h)
-    coef = np.array(sol["x"]).flatten()
-
+    coef = np.array(sol['x']).flatten()
+    
     # Clip the coefficients to avoid extreme values
     coef = np.clip(coef, 0, B)
-
+    
     return coef
 
+def compute_rbf(X, Z, sigma=1.0):
+    """ Compute RBF kernel matrix """
+    K = np.zeros((X.shape[0], Z.shape[0]), dtype=float)
+    for i, vx in enumerate(X):
+        K[i, :] = np.exp(-np.sum((vx - Z) ** 2, axis=1) / (2.0 * sigma))
+    return K
+
+def adjust_sigma(data):
+    """ Dynamically adjust sigma based on the variance of the data """
+    pairwise_dists = np.sum((data[:, None] - data[None, :])**2, axis=-1)
+    median_dist = np.median(pairwise_dists)
+    return median_dist / np.log(len(data))  # Use median distance scaled by the log of the sample size
 
 def KMM_error(err, p_sample, g_sample, hyperparam):
-    coef = kernel_mean_matching(p_sample, g_sample, kern="rbf", B=hyperparam)
+    coef = kernel_mean_matching(p_sample, g_sample, kern='rbf', B=hyperparam)
     return logsumexp(err(g_sample) + np.log(coef)) - np.log(g_sample.shape[0])

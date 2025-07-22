@@ -1,9 +1,13 @@
 import logging
+<<<<<<< HEAD
 
 import numpy as np
 
 from source.estimations import (ISE, MCE, Classifier_error, ISE_clip, ISE_deg,
                                 KMM_error)
+=======
+from source.estimations import MCE, ISE, ISE_deg, ISE_clip, KMM_error
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
 
 log = logging.getLogger("__main__")
 
@@ -161,7 +165,7 @@ class IS_method:
 =======
             log.debug(f"name = {self.name}, error = {error} ]")
             return error
-
+    
         if (
             self.name == "ISE"
             or self.name == "ISE_estim"
@@ -179,6 +183,7 @@ class IS_method:
 =======
             log.debug(f"name = {self.name}, error = {error} ]")
             return error
+<<<<<<< HEAD
 
         if self.name == "KMM":
             error = KMM_error(
@@ -190,4 +195,11 @@ class IS_method:
             log.debug(f"name = {self.name}, error = {error} ]")
             return error
 >>>>>>> test2
+=======
+        
+        if self.name == "KMM":
+            error = KMM_error(test_gen_dict["err"], test_gen_dict["p_test"], test_gen_dict["g_test"], hyperparam)
+            log.debug(f"name = {self.name}, error = {error} ]")
+            return error
+>>>>>>> c25b52be1e00f0f64060edceaf4404d54a55df45
         return False
