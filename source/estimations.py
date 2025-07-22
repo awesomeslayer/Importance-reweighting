@@ -59,157 +59,59 @@ def ISE(err, p, g, g_sample):
     )
 
 
-# def Classifier_error(g_train, p_train, g_test, p_test, err_func):
-#     """
-#     Estimate error on the target distribution using density ratio from a classifier.
-
-#     Parameters:
-#     - g_train: Training samples from source distribution g
-#     - p_train: Training samples from target distribution p
-#     - g_test: Test samples from source distribution g
-#     - err_func: Function that computes errors on g_test samples
-
-#     Returns:
-#     - Estimated error on the target distribution
-#     """
-#     # Create training data for classifier
-#     X_train = np.vstack([g_train, p_train])
-#     y_train = np.concatenate([np.zeros(len(g_train)), np.ones(len(p_train))])
-
-#     # Train logistic regression classifier
-#     clf = GradientBoostingClassifier(n_estimators=100)
-
-#     clf.fit(X_train, y_train)
-
-#     # Predict P(s=1|x) for g_test samples
-#     probs_target = clf.predict_proba(g_test)[:, 1]  # P(s=1|x)
-
-#     # Calculate weights according to Equation 12
-#     p_s1 = len(p_train) / (len(g_train) + len(p_train))  # P(s=1)
-#     p_s0 = 1 - p_s1  # P(s=0)
-
-#     # Compute weights: P(s=1)/P(s=0) * (1/P(s=1|x) - 1)
-#     weights =  p_s0/p_s1*(probs_target)/(1-probs_target)
-
-#     # Clip weights for numerical stability
-#     weights = np.clip(weights, 1e-7, 10000)
-
-#     log_weights =  np.log(weights)
-#     # Compute errors
-#     errors = err_func(g_test)
-
-#     # Estimate weighted average error
-
-#     return logsumexp(errors + log_weights) - np.log(len(g_test))
-
-
 def Classifier_error(g_train, p_train, g_test, p_test, err_func):
-    """
-    Estimate error on the target distribution using density ratio from a classifier.
-    This version aims to correctly implement the domain classifier based weighting
-    while preserving the user's specified final calculation structure.
-
-    Parameters:
-    - g_train: Training samples from source distribution g
-    - p_train: Training samples from target distribution p
-    - g_test: Test samples from source distribution g
-    - p_test: Test samples from target distribution p (not used for error calc, but for consistency)
-    - err_func: Function that computes errors on g_test samples (assumed to be linear scale losses)
-
-    Returns:
-    - A log-transformed weighted value: log( (1/N_g_test) * sum(exp(errors_i) * weights_i) )
-    """
-
-    # Epsilon values for numerical stability
-    epsilon_prob = 0  # For probabilities before division or log
-    epsilon_denom = 1e-10  # For denominators in ratios if they can be zero
+    epsilon_prob = 0  
+    epsilon_denom = 1e-10  
 
     if len(g_train) == 0:
-        # Cannot train domain classifier or define source priors properly
-        # Or err_func might fail on empty g_test if g_test depends on g_train size
         print(
             "Warning: g_train is empty. Cannot compute Classifier_error reliably. Returning NaN."
         )
         return np.nan
 
     if len(p_train) == 0:
-        # If p_train is empty, cannot estimate target distribution properties for weighting.
-        # Weights would be ill-defined (e.g., division by zero in prior ratio).
-        # In this scenario, one might default to unweighted error or indicate failure.
         print(
             "Warning: p_train is empty. Density ratio weights are ill-defined. Returning NaN."
         )
-        # As an alternative, one could compute unweighted error:
-        # errors = err_func(g_test)
-        # return np.log(np.mean(np.exp(errors))) # if the exp(error) logic is kept
-        # or simply np.mean(errors) if returning linear scale error
         return np.nan
 
-    # 1. Train the domain classifier
-    # Combined training data for the domain classifier
     X_train = np.vstack([g_train, p_train])
-    # Labels for domain classifier: 1 for source (g_train), 0 for target (p_train)
-    # This convention aligns with s=1 for source in the paper's derivation for Equation 12
     y_train = np.concatenate([np.ones(len(g_train)), np.zeros(len(p_train))])
 
     clf = GradientBoostingClassifier(
         n_estimators=100, learning_rate=0.1, max_depth=3
-    )  # liblinear is often good for smaller datasets
+    )  
     clf.fit(X_train, y_train)
 
-    # 2. Get probability estimates for g_test samples
-    # Ensure we get P(s=1|x), i.e., probability of being from source domain
-    # clf.classes_ will be [0, 1] due to y_train. Class 1 is source.
     class_1_idx = -1
     try:
         class_1_idx = np.where(clf.classes_ == 1)[0][0]
     except IndexError:
-        # This should not happen if y_train contains 1s and 0s
+       
         raise ValueError(
             "Class 1 (source) or Class 0 (target) not found in domain classifier's classes."
         )
 
-    # P(s=1|x) for g_test samples (probability of x being from source domain)
     probs_s_eq_1_for_g_test = clf.predict_proba(g_test)[:, class_1_idx]
 
-    # 3. Calculate density ratio components based on Equation 12
-    # Density ratio p(x|target)/p(x|source) approx = [P(s=1)/P(s=0)] * [P(s=0|x)/P(s=1|x)]
-    # where P(s=1) is prior for source, P(s=0) is prior for target.
-
-    # Prior ratio: P(s=1)/P(s=0) estimated as N_g_train / N_p_train
     N_g_train = float(len(g_train))
     N_p_train = float(len(p_train))
 
-    # Denominator N_p_train is already checked not to be zero at the start
     prior_ratio_mult = N_g_train / N_p_train
 
-    # Likelihood ratio from classifier: P(s=0|x) / P(s=1|x)
-    # P(s=0|x) = 1 - P(s=1|x)
-    # Add epsilon_prob to prevent division by zero and log(0) if P(s=1|x) is 0 or 1
     p_s1_clipped = probs_s_eq_1_for_g_test
-    p_s0_clipped = 1.0 - p_s1_clipped  # This will also be clipped away from 0
+    p_s0_clipped = 1.0 - p_s1_clipped  
 
     likelihood_ratio_from_clf = p_s0_clipped / p_s1_clipped
 
-    # Combine to get weights
-    # weights = prior_ratio_mult * likelihood_ratio_from_clf
     raw_weights = prior_ratio_mult * likelihood_ratio_from_clf
 
-    # Clip weights for numerical stability (as in the original snippet)
-    original_weights = raw_weights.copy()  # For logging clipped count
-    weights = np.clip(raw_weights, 1e-7, 1000)  # User's original clip values
+    original_weights = raw_weights.copy()  
+    weights = np.clip(raw_weights, 1e-7, 1000)  
 
-    # Log any clipped weights (count)
     clipped_count = np.sum(original_weights != weights)
-    # if clipped_count > 0:
-    #     print(f"Classifier_error: Clipped {clipped_count}/{len(weights)} weights.")
-
-    # 4. Calculate log_weights
-    # It's safer to log the already clipped positive weights
     log_weights = np.log(weights)
 
-    # 5. Compute errors using the provided err_func
-    # These errors are assumed to be on a linear scale, not log-scale.
     errors = err_func(g_test)
     if not isinstance(errors, np.ndarray):
         errors = np.array(errors)
@@ -219,18 +121,14 @@ def Classifier_error(g_train, p_train, g_test, p_test, err_func):
             f"Length of errors ({len(errors)}) from err_func does not match length of g_test ({len(g_test)})."
         )
 
-    # 6. Compute the final "weighted_error" as per the user's logsumexp structure
-    # This calculates: log ( (1/N_g_test) * sum_i ( exp(errors_i) * weights_i ) )
-    # where N_g_test = len(g_test)
     if (
         len(g_test) == 0
-    ):  # Should be caught by len(g_train) check if g_test derived from g_train
+    ):  
         print(
             "Warning: g_test is empty. Cannot compute final weighted error. Returning NaN."
         )
         return np.nan
 
-    # The terms inside logsumexp are errors_i + log_weights_i
     terms_for_lse = errors + log_weights
 
     weighted_error = logsumexp(terms_for_lse) - np.log(float(len(g_test)))
@@ -315,16 +213,15 @@ def rmse(x_err, y_err, confidence=0.95):
 
 
 def rmspe(x_err, y_err, confidence=0.95):
-    # Проверка деления на ноль и фильтрация y_err = 0
     relative_errors = []
     for x, y in zip(x_err, y_err):
         if y == 0:
-            continue  # Пропускаем нулевые значения y
+            continue  
         relative_error = ((x - y) / y) ** 2
         relative_errors.append(relative_error)
 
-    if not relative_errors:  # Все y = 0
-        return 1337, (1337, 1337)
+    if not relative_errors:  
+        return None, (None, None)
 
     rmspe_value = np.sqrt(np.mean(relative_errors)) * 100
 
@@ -338,7 +235,6 @@ def rmspe(x_err, y_err, confidence=0.95):
 
 
 def corr(x_err, y_err, confidence=0.95, method="spearman"):
-    # Удаляем пары, где есть NaN
     x_clean, y_clean = [], []
     for x, y in zip(x_err, y_err):
         if not np.isnan(x) and not np.isnan(y):
@@ -346,21 +242,18 @@ def corr(x_err, y_err, confidence=0.95, method="spearman"):
             y_clean.append(y)
 
     if len(x_clean) < 2:
-        return 0.0, (0.0, 0.0)  # Недостаточно данных
+        return 0.0, (0.0, 0.0) 
 
-    # Вычисляем корреляцию Спирмена
     corr_value, p_value = spearmanr(x_clean, y_clean)
 
-    # Доверительный интервал через преобразование Фишера (для любых корреляций)
     n = len(x_clean)
     if method == "pearson":
-        # Для Пирсона используем z-преобразование Фишера
+        
         z = np.arctanh(corr_value)
         se = 1 / np.sqrt(n - 3)
     else:
-        # Для Спирмена приближенный метод (менее точен)
         z = np.arctanh(corr_value)
-        se = 1.06 / np.sqrt(n - 3)  # Эмпирическая поправка
+        se = 1.06 / np.sqrt(n - 3)  
 
     alpha = 1 - confidence
     z_critical = stats.norm.ppf(1 - alpha / 2)
@@ -371,42 +264,6 @@ def corr(x_err, y_err, confidence=0.95, method="spearman"):
     upper = np.tanh(upper_z)
 
     return corr_value, (lower, upper)
-
-
-# def corr(x_err, y_err, confidence=0.95):
-#     """
-#     Вычисляет ковариацию между двумя массивами и её доверительный интервал.
-
-#     :param x_err: Первый массив значений.
-#     :param y_err: Второй массив значений.
-#     :param confidence: Уровень доверия для интервала (по умолчанию 0.95).
-#     :return: Ковариация и её доверительный интервал (нижняя и верхняя границы).
-#     """
-#     # Удаляем пары, где есть NaN
-#     x_clean, y_clean = [], []
-#     for x, y in zip(x_err, y_err):
-#         if not np.isnan(x) and not np.isnan(y):
-#             x_clean.append(x)
-#             y_clean.append(y)
-
-#     if len(x_clean) < 2:
-#         return 0.0, (0.0, 0.0)  # Недостаточно данных
-
-#     # Вычисляем ковариацию
-#     cov_value = np.cov(x_clean, y_clean)[0, 1]  # Ковариация между x и y
-
-#     # Вычисляем доверительный интервал для ковариации
-#     n = len(x_clean)
-#     std_dev = np.sqrt(np.var(x_clean) * np.sqrt(np.var(y_clean)))  # Оценка стандартного отклонения
-#     alpha = 1 - confidence
-#     t_critical = stats.t.ppf(1 - alpha / 2, n - 1)  # Критическое значение t-распределения
-#     margin_of_error = t_critical * (std_dev / np.sqrt(n))  # Погрешность
-
-#     # Доверительный интервал
-#     lower = cov_value - margin_of_error
-#     upper = cov_value + margin_of_error
-
-#     return cov_value, (lower, upper)
 
 
 def mape(x_err, y_err, confidence=0.95):
@@ -432,7 +289,7 @@ def kernel_mean_matching(g_train, g_test, kern='lin', B=1.0, eps=None):
     nz = g_test.shape[0]
     
     if eps is None:
-        eps = max(1e-6, B / np.sqrt(nz))  # Avoid very small values for uniform distributions
+        eps = max(1e-6, B / np.sqrt(nz))  
     
     if kern == 'lin':
         K = np.dot(g_test, g_test.T)
@@ -446,14 +303,12 @@ def kernel_mean_matching(g_train, g_test, kern='lin', B=1.0, eps=None):
     K = matrix(K)
     kappa = matrix(kappa)
     
-    # Regularization with dynamic epsilon
     G = matrix(np.vstack([np.ones((1, nz)), -np.ones((1, nz)), np.eye(nz), -np.eye(nz)]))
     h = matrix(np.hstack([nz * (1 + eps), nz * (eps - 1), B * np.ones(nz), np.zeros(nz)]))
     
     sol = solvers.qp(K, -kappa, G, h)
     coef = np.array(sol['x']).flatten()
     
-    # Clip the coefficients to avoid extreme values
     coef = np.clip(coef, 0, B)
     
     return coef
