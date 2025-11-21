@@ -1,26 +1,54 @@
 conf:
   max_mu : 100
-  n_samples : 7000
-  n_dim : 3
-  n_GM_components : 30
+  n_samples : 5000
+  n_dim : 2
+  n_GM_components : 1
   n_GP_components : 5
   kappa : 0.1
   sigma : 2
   lambda_parent: 2
   lambda_daughter: 100
+  text : "free.txt"
     
 
 params:
-  max_cov_list : [10, 15, 20, 40, 50, 60, 70, 100]
-  n_tests : 15
+  max_cov_list : [50]
+  n_tests : 10
   f : "GMM"
   model : "boosting" 
   samples : "GMM"
+  
+  
+  # Distribution types: "uniform", "GMM", "Thomas", "Matern"
+  p_distribution: "GMM"
+  g_distribution: "GMM"
+  
+  # GMM-specific parameters for p_gen (target distribution)
+  p_gmm_params:
+    max_cov: 100              # Covariance scale for sparse/clustered GMM
+    mu_offset: null           # Offset for means: null, scalar, or [x, y, ...] 
+    cov_scale: null          # Scaling factor for covariances: null or scalar
+    fixed_means: true        # If true, use zero means (mu=0)
+    fixed_cov: false         # If true, use identity covariances (Sigma=I)
+    crop_region: null         # Crop region: null, "lower_half", "upper_half", "left_half", 
+                              # "right_half", "center_square", or dict like {dim0_min: 0, dim0_max: 50}
+  
+  # GMM-specific parameters for g_gen (source distribution)
+  g_gmm_params:
+    max_cov: 150               # Covariance scale for clustered GMM
+    mu_offset: null           # Offset for means: null, scalar, or [x, y, ...]
+    cov_scale:  150         # Scaling factor for covariances: null or scalar
+    fixed_means: true        # If true, use zero means (mu=0)
+    fixed_cov: true     # If true, use identity covariances (Sigma=I)
+    crop_region:   null       # Crop region: same options as p_gmm_params
+  
+  p_style: "GMM"  
+
   n_splits : 1
 
 methods:
   x_estim : ["ISE_estim"] 
-  x_no_estim : ["MCE_g", KMM]
+  x_no_estim : ["MCE_g", "KMM", "Classifier"]
   y : ["MCE_p"]
 
 hyp_dict:
@@ -28,7 +56,7 @@ hyp_dict:
   ISE_deg : [0, 0.1, 0.01, 0.001, 2, 10]
   ISE_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99999]
   ISE_estim_clip : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.99999]
-  KMM : [100000]
+  KMM : [10]
 
 hyp_params_dict:
   bw_list : ['scott']
@@ -37,9 +65,7 @@ hyp_params_dict:
   clip_thrhold : 0.25
   clip_step : 0.001
   confidence : 0.95
-  KL_enable : False 
-  metrics_plots: False
+  KL_enable : True 
+  metrics_plots: True
   smooth_flag : True
   errorbar_flag : False
-
-  

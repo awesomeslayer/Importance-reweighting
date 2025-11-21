@@ -23,7 +23,8 @@ def plot_max_cov(cfg: DictConfig):
         plot_cov_KL_estim(conf, params, ["skl"])
 
     for max_cov in tqdm(params["max_cov_list"]):
-        conf["max_cov"] = max_cov
+        params['g_gmm_params']["max_cov"] = max_cov
+        conf['max_cov'] = max_cov
         run(conf, params, methods_list, hyp_params_dict)
 
     methods_list_all = []

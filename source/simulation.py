@@ -54,11 +54,31 @@ def _compute_precisions_cholesky(covariances):
     return precisions_chol
 
 
-def _GMM_gen(max_mu, max_cov, n_components, n_dim):
+def _GMM_gen(max_mu, max_cov, n_components, n_dim, mu_offset=None, cov_scale=None):
+    """
+    Enhanced GMM generator with optional mean offset and covariance scaling
+    
+    :param max_mu: maximum mean value
+    :param max_cov: maximum covariance scale
+    :param n_components: number of mixture components
+    :param n_dim: dimensionality
+    :param mu_offset: optional offset to add to means (array of shape (n_dim,))
+    :param cov_scale: optional scaling factor for covariances (scalar)
+    :return: GaussianMixture object
+    """
     mu = max_mu * np.random.random((n_components, n_dim))
+    
+    # Apply mean offset if provided
+    if mu_offset is not None:
+        mu = mu + np.array(mu_offset).reshape(1, -1)
+    
     var = max_cov * np.array(
         [random_covariance_matrix(n_dim) for _ in range(n_components)], np.float32
     )
+    
+    # Apply covariance scaling if provided
+    if cov_scale is not None:
+        var = var * cov_scale
 
     p = np.random.random(n_components)
     p /= p.sum()
@@ -85,6 +105,128 @@ def random_GMM_samples(config):
     log_density = lambda X: gmm.score_samples(X)
 
     return samples[0], log_density
+
+
+def random_GMM_samples_with_params(config, mu_offset=None, cov_scale=None, 
+                                   fixed_means=False, fixed_cov=False):
+    """
+    Generate GMM samples with flexible mean and covariance control
+    
+    :param config: configuration dictionary
+    :param mu_offset: offset to add to means (None, scalar, or array)
+    :param cov_scale: scaling factor for covariances (None or scalar)
+    :param fixed_means: if True, use zero means
+    :param fixed_cov: if True, use identity covariances
+    :return: samples, log_density function
+    """
+    if fixed_means:
+        mu = np.full((config["n_GM_components"], config["n_dim"]), 50)
+
+    else:
+        mu = config["max_mu"] * np.random.random((config["n_GM_components"], config["n_dim"]))
+    
+    if mu_offset is not None:
+        if np.isscalar(mu_offset):
+            mu = mu + mu_offset
+        else:
+            mu = mu + np.array(mu_offset).reshape(1, -1)
+    
+    if fixed_cov:
+        var = np.array([np.identity(config["n_dim"]) for _ in range(config["n_GM_components"])], np.float32)
+    else:
+        var = config["max_cov"] * np.array(
+            [random_covariance_matrix(config["n_dim"]) for _ in range(config["n_GM_components"])], 
+            np.float32
+        )
+    
+    if cov_scale is not None:
+        var = var * cov_scale
+
+    p = np.random.random(config["n_GM_components"])
+    p /= p.sum()
+
+    gmm = GaussianMixture(n_components=config["n_GM_components"], covariance_type="full")
+    gmm.weights_ = p
+    gmm.means_ = mu
+    gmm.covariances_ = var
+    gmm.precisions_cholesky_ = _compute_precisions_cholesky(var)
+    
+    samples = gmm.sample(config["n_samples"])
+    log_density = lambda X: gmm.score_samples(X)
+
+    return samples[0], log_density
+
+
+def random_GMM_samples_cropped(config, crop_region=None):
+    """
+    Generate GMM samples and crop to a specific region
+    
+    :param config: configuration dictionary
+    :param crop_region: dict with 'x_min', 'x_max', 'y_min', 'y_max', etc.
+                       or string like 'lower_half', 'upper_half', 'left_half', 'right_half'
+    :return: cropped samples, log_density function
+    """
+    gmm = _GMM_gen(
+        config["max_mu"], config["max_cov"], config["n_GM_components"], config["n_dim"]
+    )
+    
+    # Generate more samples than needed for cropping
+    oversample_factor = 3
+    samples_temp = gmm.sample(config["n_samples"] * oversample_factor)[0]
+    
+    # Define crop region
+    if isinstance(crop_region, str):
+        if crop_region == 'lower_half':
+            mask = samples_temp[:, 1] < config["max_mu"] / 2
+        elif crop_region == 'upper_half':
+            mask = samples_temp[:, 1] >= config["max_mu"] / 2
+        elif crop_region == 'left_half':
+            mask = samples_temp[:, 0] < config["max_mu"] / 2
+        elif crop_region == 'right_half':
+            mask = samples_temp[:, 0] >= config["max_mu"] / 2
+        elif crop_region == 'center_square':
+            center = config["max_mu"] / 2
+            quarter = config["max_mu"] / 4
+            mask = ((samples_temp[:, 0] >= center - quarter) & 
+                   (samples_temp[:, 0] <= center + quarter) &
+                   (samples_temp[:, 1] >= center - quarter) & 
+                   (samples_temp[:, 1] <= center + quarter))
+        else:
+            mask = np.ones(len(samples_temp), dtype=bool)
+    elif isinstance(crop_region, dict):
+        mask = np.ones(len(samples_temp), dtype=bool)
+        for dim in range(config["n_dim"]):
+            if f'dim{dim}_min' in crop_region:
+                mask &= samples_temp[:, dim] >= crop_region[f'dim{dim}_min']
+            if f'dim{dim}_max' in crop_region:
+                mask &= samples_temp[:, dim] <= crop_region[f'dim{dim}_max']
+    else:
+        mask = np.ones(len(samples_temp), dtype=bool)
+    
+    cropped_samples = samples_temp[mask]
+    
+    # Ensure we have enough samples
+    while len(cropped_samples) < config["n_samples"]:
+        additional_samples = gmm.sample(config["n_samples"])[0]
+        if isinstance(crop_region, str):
+            if crop_region == 'lower_half':
+                mask = additional_samples[:, 1] < config["max_mu"] / 2
+            elif crop_region == 'upper_half':
+                mask = additional_samples[:, 1] >= config["max_mu"] / 2
+            elif crop_region == 'left_half':
+                mask = additional_samples[:, 0] < config["max_mu"] / 2
+            elif crop_region == 'right_half':
+                mask = additional_samples[:, 0] >= config["max_mu"] / 2
+            else:
+                mask = np.ones(len(additional_samples), dtype=bool)
+        else:
+            mask = np.ones(len(additional_samples), dtype=bool)
+        cropped_samples = np.vstack([cropped_samples, additional_samples[mask]])
+    
+    samples = cropped_samples[:config["n_samples"]]
+    log_density = lambda X: gmm.score_samples(X)
+
+    return samples, log_density
 
 
 def random_uniform_samples(config, fixed_region: bool = False):
@@ -123,11 +265,6 @@ def random_GP_func(config):
     kernel = GPy.kern.RBF(input_dim=2, variance=1.0, lengthscale=1.0)
     model = GPy.models.GPRegression(X, Y, kernel, noise_var=1e-10)
 
-    # heatmap(
-    #    u_config,
-    #    lambda X: model.posterior_samples_f(X, full_cov=True, size=1),
-    #    n_points=50,
-    # )
     return lambda X: model.posterior_samples_f(X, full_cov=True, size=1)
 
 
@@ -156,6 +293,7 @@ def random_linear_func(config):
     x = np.random.random(config["n_dim"]) * 2 - 1
     a = np.random.random() * config["max_mu"]
     return lambda X: ((X * x).sum(axis=1) + a)
+
 
 def random_quadratic_func(config):
     """
@@ -199,7 +337,7 @@ def random_gaussian_mixture_func(config):
     return g
 
 
-def visualize_pattern(samples, config, name, alpha = 0.7):
+def visualize_pattern(samples, config, name, alpha=0.7):
     os.makedirs(f"./main/results/patterns/{name}", exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -208,6 +346,7 @@ def visualize_pattern(samples, config, name, alpha = 0.7):
     ax.set_xlim((0, config["max_mu"]))
     ax.set_ylim((0, config["max_mu"]))
     plt.savefig(f"./main/results/patterns/{name}/{config['max_cov']}.pdf")
+
 
 def random_thomas_samples(config):
     """

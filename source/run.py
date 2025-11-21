@@ -1,6 +1,8 @@
 import logging
 from copy import copy
 from functools import partial
+import os
+import matplotlib.pyplot as plt
 
 import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
@@ -15,9 +17,13 @@ from .simulation import (DummyModel, random_gaussian_mixture_func,
                          random_GMM_samples, random_GP_func,
                          random_linear_func, random_matern_samples,
                          random_quadratic_func, random_thomas_samples,
-                         random_uniform_samples, visualize_pattern)
+                         random_uniform_samples, visualize_pattern, random_GMM_samples_with_params, random_GMM_samples_cropped)
 
 log = logging.getLogger("__main__")
+
+
+from functools import partial
+from copy import copy
 
 
 def run(
@@ -26,6 +32,18 @@ def run(
     methods_list,
     hyp_params_dict,
 ):
+    """
+    Run experiment with flexible p_gen and g_gen configurations
+    
+    Configuration logic:
+    - p_gen and g_gen distributions are specified via p_distribution and g_distribution
+    - For GMM distributions, additional parameters can be specified via p_gmm_params and g_gmm_params
+    - Supports: uniform, GMM (with various configurations), Thomas, Matern processes
+    """
+    
+    with open(f"{conf['text']}", "a") as f:
+        f.write(str(params) + "\n")
+
     f_gens = {
         "linear": partial(random_linear_func, conf),
         "quadratic": partial(random_quadratic_func, conf),
@@ -35,25 +53,127 @@ def run(
 
     models = {"linear": DummyModel(), "boosting": GradientBoostingRegressor()}
 
-    samples = {
+    base_samples = {
         "GMM": random_GMM_samples,
         "Thomas": random_thomas_samples,
         "Matern": random_matern_samples,
+        "uniform": random_uniform_samples,
     }
 
     params["f_gen"] = f_gens[params["f"]]
     params["model_gen"] = models[params["model"]]
-    params["g_gen"] = partial(samples[params["samples"]], conf)
+    
+    g_distribution = params.get("g_distribution", params.get("samples", "GMM"))
+    
+    if g_distribution == "GMM":
+        g_gmm_params = params.get("g_gmm_params", {})
+        
+        conf_g = copy(conf)
+        conf_g["max_cov"] = g_gmm_params.get("max_cov", conf.get("max_cov", 50))
+        
+        has_advanced_params = (
+            g_gmm_params.get("mu_offset") is not None or
+            g_gmm_params.get("cov_scale") is not None or
+            g_gmm_params.get("fixed_means", False) or
+            g_gmm_params.get("fixed_cov", False)
+        )
+        
+        crop_region = g_gmm_params.get("crop_region")
+        
+        if crop_region is not None:
+            params["g_gen"] = partial(
+                random_GMM_samples_cropped,
+                conf_g,
+                crop_region=crop_region
+            )
+        elif has_advanced_params:
+            params["g_gen"] = partial(
+                random_GMM_samples_with_params,
+                conf_g,
+                mu_offset=g_gmm_params.get("mu_offset"),
+                cov_scale=g_gmm_params.get("cov_scale"),
+                fixed_means=g_gmm_params.get("fixed_means", False),
+                fixed_cov=g_gmm_params.get("fixed_cov", False)
+            )
+        else:
+            params["g_gen"] = partial(base_samples["GMM"], conf_g)
+    
+    elif g_distribution == "Thomas":
+        conf_g = copy(conf)
+        conf_g["max_cov"] = params.get("g_gmm_params", {}).get("max_cov", conf.get("max_cov", 50))
+        params["g_gen"] = partial(base_samples["Thomas"], conf_g)
+    
+    elif g_distribution == "Matern":
+        conf_g = copy(conf)
+        conf_g["max_cov"] = params.get("g_gmm_params", {}).get("max_cov", conf.get("max_cov", 50))
+        params["g_gen"] = partial(base_samples["Matern"], conf_g)
+    
+    elif g_distribution == "uniform":
+        params["g_gen"] = partial(random_uniform_samples, conf, fixed_region=True)
+    
+    else:
+        conf_g = copy(conf)
+        params["g_gen"] = partial(base_samples[params.get("samples", "GMM")], conf_g)
+    
+    p_distribution = params.get("p_distribution", params.get("p_style", "GMM"))
+    
+    if p_distribution == "uniform":
+        params["p_gen"] = partial(random_uniform_samples, conf, fixed_region=True)
+    
+    elif p_distribution == "GMM":
+        p_gmm_params = params.get("p_gmm_params", {})
+        
+        conf_p = copy(conf)
+        conf_p["max_cov"] = p_gmm_params.get("max_cov", 400)
+        
+        has_advanced_params = (
+            p_gmm_params.get("mu_offset") is not None or
+            p_gmm_params.get("cov_scale") is not None or
+            p_gmm_params.get("fixed_means", False) or
+            p_gmm_params.get("fixed_cov", False)
+        )
+        
+        crop_region = p_gmm_params.get("crop_region")
+        
+        if crop_region is not None:
+            params["p_gen"] = partial(
+                random_GMM_samples_cropped,
+                conf_p,
+                crop_region=crop_region
+            )
+        elif has_advanced_params:
+            params["p_gen"] = partial(
+                random_GMM_samples_with_params,
+                conf_p,
+                mu_offset=p_gmm_params.get("mu_offset"),
+                cov_scale=p_gmm_params.get("cov_scale"),
+                fixed_means=p_gmm_params.get("fixed_means", False),
+                fixed_cov=p_gmm_params.get("fixed_cov", False)
+            )
+        else:
+            params["p_gen"] = partial(base_samples["GMM"], conf_p)
+    
+    elif p_distribution == "Thomas":
+        conf_p = copy(conf)
+        conf_p["max_cov"] = params.get("p_gmm_params", {}).get("max_cov", 400)
+        params["p_gen"] = partial(base_samples["Thomas"], conf_p)
+    
+    elif p_distribution == "Matern":
+        conf_p = copy(conf)
+        conf_p["max_cov"] = params.get("p_gmm_params", {}).get("max_cov", 400)
+        params["p_gen"] = partial(base_samples["Matern"], conf_p)
+    
+    else:
+        if params.get("p_style") == "uniform":
+            params["p_gen"] = partial(random_uniform_samples, conf, fixed_region=True)
+        else:
+            conf_p = copy(conf)
+            conf_p["max_cov"] = 400
+            params["p_gen"] = partial(base_samples["GMM"], conf_p)
 
-    conf_p = copy(conf)
-    if params["p_style"] == "uniform":
-        params["p_gen"] = partial(random_uniform_samples, conf, True)
-
-    elif params["p_style"] == "GMM":
-
-        conf_p["max_cov"] = 400
-        params["p_gen"] = partial(samples["GMM"], conf_p)
-
+    g_samples_plot, _ = params["g_gen"]()
+    p_samples_plot, _ = params["p_gen"]()
+    
     kf = (
         KFold(n_splits=params["n_splits"])
         if params["n_splits"] > 1
